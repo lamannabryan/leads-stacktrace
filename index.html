@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b0b0f">
+    <title>Leads Stacktrace</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="Gerenciador de leads">
+        <header class="topbar">
+          <div class="title-stack">
+            <p class="eyebrow">Pipeline comercial</p>
+            <h1>Leads Stacktrace</h1>
+          </div>
+          <div class="status-pill" id="syncStatus">Carregando</div>
+        </header>
+
+        <section class="metrics-grid" aria-label="Resumo dos leads">
+          <article class="metric-card">
+            <span>Total de leads</span>
+            <strong id="totalLeads">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Com contato</span>
+            <strong id="contactLeads">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Com link</span>
+            <strong id="linkLeads">0</strong>
+          </article>
+        </section>
+
+        <section class="lead-panel" aria-label="Cadastro de lead">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Novo registro</p>
+              <h2>Cadastrar lead</h2>
+            </div>
+          </div>
+
+          <form id="leadForm" class="lead-form">
+            <input type="hidden" id="leadId">
+
+            <label>
+              <span>Nome</span>
+              <input id="name" name="name" type="text" placeholder="Nome do cliente" autocomplete="name" required>
+            </label>
+
+            <label>
+              <span>Link</span>
+              <input id="link" name="link" type="url" placeholder="https://..." autocomplete="url">
+            </label>
+
+            <label>
+              <span>Contato</span>
+              <input id="contact" name="contact" type="text" placeholder="Telefone, email ou WhatsApp" autocomplete="email">
+            </label>
+
+            <label class="full-field">
+              <span>Observa&ccedil;&otilde;es</span>
+              <textarea id="notes" name="notes" rows="4" placeholder="Detalhes importantes sobre o lead"></textarea>
+            </label>
+
+            <div class="form-actions full-field">
+              <button class="secondary-button" type="button" id="cancelEditButton" hidden>Cancelar edi&ccedil;&atilde;o</button>
+              <button class="primary-button" type="submit" id="submitButton">Salvar lead</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="list-tools" aria-label="Ferramentas de busca">
+          <label class="search-box">
+            <span>Buscar</span>
+            <input id="searchInput" type="search" placeholder="Filtrar por nome, contato, link ou obs">
+          </label>
+          <button class="secondary-button icon-button" type="button" id="refreshButton" aria-label="Atualizar leads" title="Atualizar leads">&#8635;</button>
+        </section>
+
+        <section class="leads-area" aria-live="polite">
+          <div class="empty-state" id="emptyState" hidden>
+            Nenhum lead cadastrado ainda.
+          </div>
+          <div class="lead-grid" id="leadGrid"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
