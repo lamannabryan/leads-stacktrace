@@ -74,7 +74,7 @@ button:disabled {
 }
 
 .workspace {
-  width: min(1180px, 100%);
+  width: min(1480px, 100%);
   margin: 0 auto;
 }
 
@@ -369,25 +369,28 @@ textarea:focus {
 }
 
 .lead-list-shell {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: rgba(28, 28, 30, 0.84);
 }
 
 .lead-list-header,
 .lead-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1.35fr) minmax(140px, 0.85fr) minmax(160px, 0.9fr) minmax(130px, 0.65fr) minmax(330px, 1.2fr);
-  gap: 14px;
+  grid-template-columns: minmax(230px, 1.45fr) minmax(160px, 0.85fr) minmax(210px, 0.9fr) minmax(130px, 0.6fr) minmax(410px, 1.15fr);
+  gap: 12px;
   align-items: center;
+  min-width: 1260px;
 }
 
 .lead-list-header {
   border-bottom: 1px solid var(--separator);
   padding: 12px 15px;
   color: var(--secondary-text);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .lead-list {
@@ -396,8 +399,8 @@ textarea:focus {
 
 .lead-row {
   position: relative;
-  min-height: 74px;
-  padding: 14px 15px;
+  min-height: 64px;
+  padding: 11px 15px;
   border-bottom: 1px solid rgba(235, 235, 245, 0.08);
   background: transparent;
   transition: background 160ms ease, box-shadow 160ms ease;
@@ -418,21 +421,21 @@ textarea:focus {
 
 .lead-identity {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 11px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
   align-items: center;
   min-width: 0;
 }
 
 .lead-avatar {
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   place-items: center;
   border-radius: 50%;
   background: linear-gradient(145deg, #0a84ff, #64d2ff);
   color: #ffffff;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   font-weight: 800;
   box-shadow: 0 10px 20px rgba(10, 132, 255, 0.22);
 }
@@ -449,33 +452,40 @@ textarea:focus {
 }
 
 .lead-title-group h2 {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin: 0;
   color: var(--text);
-  font-size: 1.04rem;
+  font-size: 0.92rem;
   font-weight: 760;
   line-height: 1.24;
 }
 
 .lead-date {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-top: 3px;
   color: var(--secondary-text);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 650;
 }
 
 .lead-contact,
 .lead-updated {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #d1d1d6;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 650;
 }
 
 .lead-updated {
   color: var(--secondary-text);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
 }
 
 .lead-meta {
@@ -483,7 +493,13 @@ textarea:focus {
   flex-wrap: wrap;
   gap: 7px;
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.78rem;
+}
+
+.lead-row .lead-meta {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .lead-meta a,
@@ -496,11 +512,17 @@ textarea:focus {
   max-width: 100%;
   border: 1px solid rgba(235, 235, 245, 0.1);
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 5px 8px;
   background: rgba(58, 58, 60, 0.72);
   color: var(--muted);
   font-weight: 680;
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.lead-row .meta-chip {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meta-chip[href] {
@@ -519,7 +541,7 @@ textarea:focus {
 
 .row-actions {
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   padding-top: 1px;
 }
@@ -529,8 +551,9 @@ textarea:focus {
 .row-actions .priority-button,
 .row-actions .danger-button {
   min-height: 36px;
-  padding: 0 12px;
-  font-size: 0.86rem;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -669,18 +692,19 @@ textarea:focus {
   }
 
   .lead-list-header {
-    display: none;
+    display: grid;
   }
 
   .lead-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    align-items: stretch;
+    grid-template-columns: minmax(230px, 1.45fr) minmax(160px, 0.85fr) minmax(210px, 0.9fr) minmax(130px, 0.6fr) minmax(410px, 1.15fr);
+    gap: 12px;
+    align-items: center;
+    min-width: 1260px;
   }
 
   .lead-contact::before,
   .lead-updated::before {
-    display: block;
+    display: none;
     margin-bottom: 4px;
     color: var(--secondary-text);
     font-size: 0.72rem;
@@ -697,7 +721,7 @@ textarea:focus {
   }
 
   .row-actions {
-    justify-content: stretch;
+    justify-content: flex-end;
   }
 
   .details-grid {
@@ -713,7 +737,13 @@ textarea:focus {
     width: 100%;
   }
 
-  .row-actions,
+  .lead-row .primary-button,
+  .lead-row .secondary-button,
+  .lead-row .priority-button,
+  .lead-row .danger-button {
+    width: auto;
+  }
+
   .modal-actions {
     flex-direction: column;
   }
