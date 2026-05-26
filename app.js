@@ -8,17 +8,35 @@ const linkInput = document.querySelector("#link");
 const contactInput = document.querySelector("#contact");
 const notesInput = document.querySelector("#notes");
 const priorityInput = document.querySelector("#priority");
+const leadFormDialog = document.querySelector("#leadFormDialog");
+const formModalEyebrow = document.querySelector("#formModalEyebrow");
+const formModalTitle = document.querySelector("#formModalTitle");
+const closeFormModalButton = document.querySelector("#closeFormModalButton");
 const submitButton = document.querySelector("#submitButton");
 const cancelEditButton = document.querySelector("#cancelEditButton");
+const newLeadButton = document.querySelector("#newLeadButton");
 const refreshButton = document.querySelector("#refreshButton");
 const searchInput = document.querySelector("#searchInput");
-const leadGrid = document.querySelector("#leadGrid");
+const leadListShell = document.querySelector(".lead-list-shell");
+const leadList = document.querySelector("#leadList");
 const emptyState = document.querySelector("#emptyState");
 const syncStatus = document.querySelector("#syncStatus");
 const totalLeads = document.querySelector("#totalLeads");
 const contactLeads = document.querySelector("#contactLeads");
 const linkLeads = document.querySelector("#linkLeads");
 const priorityLeads = document.querySelector("#priorityLeads");
+const leadDetailsDialog = document.querySelector("#leadDetailsDialog");
+const closeDetailsModalButton = document.querySelector("#closeDetailsModalButton");
+const detailsLeadName = document.querySelector("#detailsLeadName");
+const detailsAvatar = document.querySelector("#detailsAvatar");
+const detailsDate = document.querySelector("#detailsDate");
+const detailsBadges = document.querySelector("#detailsBadges");
+const detailsContact = document.querySelector("#detailsContact");
+const detailsLink = document.querySelector("#detailsLink");
+const detailsNotes = document.querySelector("#detailsNotes");
+const detailsPriorityButton = document.querySelector("#detailsPriorityButton");
+const detailsEditButton = document.querySelector("#detailsEditButton");
+const detailsDeleteButton = document.querySelector("#detailsDeleteButton");
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -26,6 +44,7 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 let leads = [];
+let activeDetailsLeadId = "";
 
 function endpoint(path = "") {
   return `${LEADS_ENDPOINT}${path}.json`;
@@ -34,6 +53,28 @@ function endpoint(path = "") {
 function setStatus(message, type = "") {
   syncStatus.textContent = message;
   syncStatus.className = `status-pill ${type}`.trim();
+}
+
+function openDialog(dialog) {
+  if (dialog.open) {
+    return;
+  }
+
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
+    return;
+  }
+
+  dialog.setAttribute("open", "");
+}
+
+function closeDialog(dialog) {
+  if (typeof dialog.close === "function" && dialog.open) {
+    dialog.close();
+    return;
+  }
+
+  dialog.removeAttribute("open");
 }
 
 function normalizeLead(id, data) {
@@ -156,6 +197,7 @@ async function saveLead(event) {
       });
     }
 
+    closeDialog(leadFormDialog);
     resetForm();
     await loadLeads();
   } catch (error) {
@@ -181,7 +223,12 @@ async function deleteLead(id) {
     });
 
     if (leadIdInput.value === id) {
+      closeDialog(leadFormDialog);
       resetForm();
+    }
+
+    if (activeDetailsLeadId === id) {
+      closeDialog(leadDetailsDialog);
     }
 
     await loadLeads();
@@ -199,6 +246,7 @@ async function togglePriority(id) {
   }
 
   const nextPriority = !lead.priority;
+  const shouldRefreshDetails = activeDetailsLeadId === id && leadDetailsDialog.open;
 
   try {
     setStatus(nextPriority ? "Priorizando" : "Atualizando");
@@ -215,10 +263,24 @@ async function togglePriority(id) {
     }
 
     await loadLeads();
+
+    if (shouldRefreshDetails) {
+      const updatedLead = leads.find((item) => item.id === id);
+
+      if (updatedLead) {
+        renderLeadDetails(updatedLead);
+      }
+    }
   } catch (error) {
     console.error(error);
     setStatus("Erro ao priorizar", "is-error");
   }
+}
+
+function openNewLeadModal() {
+  resetForm();
+  openDialog(leadFormDialog);
+  nameInput.focus();
 }
 
 function editLead(id) {
@@ -234,16 +296,25 @@ function editLead(id) {
   contactInput.value = lead.contact;
   notesInput.value = lead.notes;
   priorityInput.checked = lead.priority;
+  formModalEyebrow.textContent = "Editar registro";
+  formModalTitle.textContent = "Editar lead";
   submitButton.textContent = "Atualizar lead";
-  cancelEditButton.hidden = false;
+  closeDialog(leadDetailsDialog);
+  openDialog(leadFormDialog);
   nameInput.focus();
 }
 
 function resetForm() {
   leadForm.reset();
   leadIdInput.value = "";
+  formModalEyebrow.textContent = "Novo registro";
+  formModalTitle.textContent = "Cadastrar lead";
   submitButton.textContent = "Salvar lead";
-  cancelEditButton.hidden = true;
+}
+
+function closeFormModal() {
+  closeDialog(leadFormDialog);
+  resetForm();
 }
 
 function normalizeSearchText(value) {
@@ -273,23 +344,82 @@ function createMetaChip(text, className = "meta-chip") {
   return chip;
 }
 
+function renderLeadDetails(lead) {
+  activeDetailsLeadId = lead.id;
+  detailsLeadName.textContent = lead.name || "Lead sem nome";
+  detailsAvatar.textContent = getLeadInitials(lead.name || "Lead Stacktrace");
+  detailsAvatar.className = lead.priority ? "lead-avatar is-priority-avatar" : "lead-avatar";
+  detailsDate.textContent = formatLeadDate(lead.updatedAt || lead.createdAt) || "Sem atualiza\u00e7\u00e3o";
+
+  detailsBadges.innerHTML = "";
+
+  if (lead.priority) {
+    detailsBadges.append(createMetaChip("Prioridade", "meta-chip priority-chip"));
+  } else {
+    detailsBadges.append(createMetaChip("Sem prioridade", "meta-chip is-muted"));
+  }
+
+  if (lead.link) {
+    detailsBadges.append(createMetaChip("Com link"));
+  }
+
+  if (lead.contact) {
+    detailsBadges.append(createMetaChip("Com contato"));
+  }
+
+  detailsContact.textContent = lead.contact || "Sem contato";
+  detailsLink.innerHTML = "";
+
+  if (lead.link) {
+    const link = document.createElement("a");
+    link.href = lead.link;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.textContent = lead.link;
+    detailsLink.append(link);
+  } else {
+    detailsLink.textContent = "Sem link";
+  }
+
+  detailsNotes.textContent = lead.notes || "Sem observa\u00e7\u00f5es.";
+  detailsPriorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
+  detailsPriorityButton.textContent = lead.priority ? "Remover prioridade" : "Priorizar";
+}
+
+function openLeadDetails(id) {
+  const lead = leads.find((item) => item.id === id);
+
+  if (!lead) {
+    return;
+  }
+
+  renderLeadDetails(lead);
+  openDialog(leadDetailsDialog);
+}
+
+function closeDetailsModal() {
+  closeDialog(leadDetailsDialog);
+  activeDetailsLeadId = "";
+}
+
 function renderLeads() {
   const term = normalizeSearchText(searchInput.value.trim());
   const filteredLeads = term ? leads.filter((lead) => leadMatchesSearch(lead, term)) : leads;
 
   renderMetrics();
-  leadGrid.innerHTML = "";
+  leadList.innerHTML = "";
   emptyState.hidden = filteredLeads.length > 0;
+  leadListShell.hidden = filteredLeads.length === 0;
   emptyState.textContent = term ? "Nenhum lead encontrado para a busca." : "Nenhum lead cadastrado ainda.";
 
   const fragment = document.createDocumentFragment();
 
   filteredLeads.forEach((lead) => {
-    const card = document.createElement("article");
-    card.className = lead.priority ? "lead-card is-priority" : "lead-card";
+    const row = document.createElement("article");
+    row.className = lead.priority ? "lead-row is-priority" : "lead-row";
 
-    const header = document.createElement("div");
-    header.className = "lead-card-header";
+    const identity = document.createElement("div");
+    identity.className = "lead-identity";
 
     const avatar = document.createElement("div");
     avatar.className = "lead-avatar";
@@ -301,12 +431,16 @@ function renderLeads() {
     const title = document.createElement("h2");
     title.textContent = lead.name || "Lead sem nome";
 
-    const date = document.createElement("span");
-    date.className = "lead-date";
-    date.textContent = formatLeadDate(lead.updatedAt || lead.createdAt);
+    const leadHint = document.createElement("span");
+    leadHint.className = "lead-date";
+    leadHint.textContent = lead.link ? "Link dispon\u00edvel" : "Sem link";
 
-    titleGroup.append(title, date);
-    header.append(avatar, titleGroup);
+    titleGroup.append(title, leadHint);
+    identity.append(avatar, titleGroup);
+
+    const contact = document.createElement("div");
+    contact.className = "lead-contact";
+    contact.textContent = lead.contact || "Sem contato";
 
     const meta = document.createElement("div");
     meta.className = "lead-meta";
@@ -315,36 +449,36 @@ function renderLeads() {
       meta.append(createMetaChip("Prioridade", "meta-chip priority-chip"));
     }
 
+    if (!lead.priority) {
+      meta.append(createMetaChip("Normal", "meta-chip is-muted"));
+    }
+
     if (lead.link) {
-      const link = document.createElement("a");
-      link.className = "meta-chip";
-      link.href = lead.link;
-      link.target = "_blank";
-      link.rel = "noreferrer";
-      link.textContent = "Abrir link";
-      meta.append(link);
+      meta.append(createMetaChip("Com link"));
     }
 
     if (lead.contact) {
-      meta.append(createMetaChip(lead.contact));
+      meta.append(createMetaChip("Com contato"));
     }
 
-    if (!lead.link && !lead.contact) {
-      meta.append(createMetaChip("Sem contato", "meta-chip is-muted"));
-    }
-
-    const notes = document.createElement("p");
-    notes.className = "lead-notes";
-    notes.textContent = lead.notes || "Sem observa\u00e7\u00f5es.";
+    const updated = document.createElement("div");
+    updated.className = "lead-updated";
+    updated.textContent = formatLeadDate(lead.updatedAt || lead.createdAt) || "Sem atualiza\u00e7\u00e3o";
 
     const actions = document.createElement("div");
-    actions.className = "card-actions";
+    actions.className = "row-actions";
 
     const priorityButton = document.createElement("button");
     priorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
     priorityButton.type = "button";
     priorityButton.textContent = lead.priority ? "Remover prioridade" : "Priorizar";
     priorityButton.addEventListener("click", () => togglePriority(lead.id));
+
+    const detailsButton = document.createElement("button");
+    detailsButton.className = "secondary-button";
+    detailsButton.type = "button";
+    detailsButton.textContent = "Detalhes";
+    detailsButton.addEventListener("click", () => openLeadDetails(lead.id));
 
     const editButton = document.createElement("button");
     editButton.className = "secondary-button";
@@ -358,17 +492,53 @@ function renderLeads() {
     deleteButton.textContent = "Excluir";
     deleteButton.addEventListener("click", () => deleteLead(lead.id));
 
-    actions.append(priorityButton, editButton, deleteButton);
-    card.append(header, meta, notes, actions);
-    fragment.append(card);
+    actions.append(priorityButton, detailsButton, editButton, deleteButton);
+    row.append(identity, contact, meta, updated, actions);
+    fragment.append(row);
   });
 
-  leadGrid.append(fragment);
+  leadList.append(fragment);
 }
 
 leadForm.addEventListener("submit", saveLead);
-cancelEditButton.addEventListener("click", resetForm);
+cancelEditButton.addEventListener("click", closeFormModal);
+closeFormModalButton.addEventListener("click", closeFormModal);
+leadFormDialog.addEventListener("click", (event) => {
+  if (event.target === leadFormDialog) {
+    closeFormModal();
+  }
+});
+leadFormDialog.addEventListener("close", () => {
+  if (!submitButton.disabled) {
+    resetForm();
+  }
+});
+newLeadButton.addEventListener("click", openNewLeadModal);
 refreshButton.addEventListener("click", loadLeads);
 searchInput.addEventListener("input", renderLeads);
+closeDetailsModalButton.addEventListener("click", closeDetailsModal);
+leadDetailsDialog.addEventListener("click", (event) => {
+  if (event.target === leadDetailsDialog) {
+    closeDetailsModal();
+  }
+});
+leadDetailsDialog.addEventListener("close", () => {
+  activeDetailsLeadId = "";
+});
+detailsPriorityButton.addEventListener("click", () => {
+  if (activeDetailsLeadId) {
+    togglePriority(activeDetailsLeadId);
+  }
+});
+detailsEditButton.addEventListener("click", () => {
+  if (activeDetailsLeadId) {
+    editLead(activeDetailsLeadId);
+  }
+});
+detailsDeleteButton.addEventListener("click", () => {
+  if (activeDetailsLeadId) {
+    deleteLead(activeDetailsLeadId);
+  }
+});
 
 loadLeads();
