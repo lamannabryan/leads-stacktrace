@@ -7,6 +7,7 @@ const nameInput = document.querySelector("#name");
 const linkInput = document.querySelector("#link");
 const contactInput = document.querySelector("#contact");
 const notesInput = document.querySelector("#notes");
+const priorityInput = document.querySelector("#priority");
 const submitButton = document.querySelector("#submitButton");
 const cancelEditButton = document.querySelector("#cancelEditButton");
 const refreshButton = document.querySelector("#refreshButton");
@@ -17,6 +18,7 @@ const syncStatus = document.querySelector("#syncStatus");
 const totalLeads = document.querySelector("#totalLeads");
 const contactLeads = document.querySelector("#contactLeads");
 const linkLeads = document.querySelector("#linkLeads");
+const priorityLeads = document.querySelector("#priorityLeads");
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -41,6 +43,7 @@ function normalizeLead(id, data) {
     link: data?.link ?? "",
     contact: data?.contact ?? "",
     notes: data?.notes ?? "",
+    priority: Boolean(data?.priority),
     createdAt: data?.createdAt ?? 0,
     updatedAt: data?.updatedAt ?? 0
   };
@@ -54,6 +57,7 @@ function getFormLead() {
     link: linkInput.value.trim(),
     contact: contactInput.value.trim(),
     notes: notesInput.value.trim(),
+    priority: priorityInput.checked,
     updatedAt: now
   };
 }
@@ -80,6 +84,18 @@ function formatLeadDate(timestamp) {
   return `Atualizado em ${dateFormatter.format(new Date(timestamp))}`;
 }
 
+function getLeadTime(lead) {
+  return lead.updatedAt || lead.createdAt || 0;
+}
+
+function sortLeads(a, b) {
+  if (a.priority !== b.priority) {
+    return Number(b.priority) - Number(a.priority);
+  }
+
+  return getLeadTime(b) - getLeadTime(a);
+}
+
 async function requestFirebase(path, options = {}) {
   const response = await fetch(endpoint(path), {
     headers: {
@@ -102,7 +118,7 @@ async function loadLeads() {
     const data = await requestFirebase();
     leads = Object.entries(data ?? {})
       .map(([id, lead]) => normalizeLead(id, lead))
-      .sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
+      .sort(sortLeads);
 
     renderLeads();
     setStatus("Sincronizado", "is-ok");
@@ -175,6 +191,36 @@ async function deleteLead(id) {
   }
 }
 
+async function togglePriority(id) {
+  const lead = leads.find((item) => item.id === id);
+
+  if (!lead) {
+    return;
+  }
+
+  const nextPriority = !lead.priority;
+
+  try {
+    setStatus(nextPriority ? "Priorizando" : "Atualizando");
+    await requestFirebase(`/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        priority: nextPriority,
+        updatedAt: Date.now()
+      })
+    });
+
+    if (leadIdInput.value === id) {
+      priorityInput.checked = nextPriority;
+    }
+
+    await loadLeads();
+  } catch (error) {
+    console.error(error);
+    setStatus("Erro ao priorizar", "is-error");
+  }
+}
+
 function editLead(id) {
   const lead = leads.find((item) => item.id === id);
 
@@ -187,6 +233,7 @@ function editLead(id) {
   linkInput.value = lead.link;
   contactInput.value = lead.contact;
   notesInput.value = lead.notes;
+  priorityInput.checked = lead.priority;
   submitButton.textContent = "Atualizar lead";
   cancelEditButton.hidden = false;
   nameInput.focus();
@@ -199,8 +246,16 @@ function resetForm() {
   cancelEditButton.hidden = true;
 }
 
+function normalizeSearchText(value) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function leadMatchesSearch(lead, term) {
-  const haystack = `${lead.name} ${lead.link} ${lead.contact} ${lead.notes}`.toLowerCase();
+  const priorityKeywords = lead.priority ? "prioridade prioritario prioritarios" : "";
+  const haystack = normalizeSearchText(`${lead.name} ${lead.link} ${lead.contact} ${lead.notes} ${priorityKeywords}`);
   return haystack.includes(term);
 }
 
@@ -208,6 +263,7 @@ function renderMetrics() {
   totalLeads.textContent = leads.length;
   contactLeads.textContent = leads.filter((lead) => lead.contact).length;
   linkLeads.textContent = leads.filter((lead) => lead.link).length;
+  priorityLeads.textContent = leads.filter((lead) => lead.priority).length;
 }
 
 function createMetaChip(text, className = "meta-chip") {
@@ -218,7 +274,7 @@ function createMetaChip(text, className = "meta-chip") {
 }
 
 function renderLeads() {
-  const term = searchInput.value.trim().toLowerCase();
+  const term = normalizeSearchText(searchInput.value.trim());
   const filteredLeads = term ? leads.filter((lead) => leadMatchesSearch(lead, term)) : leads;
 
   renderMetrics();
@@ -230,7 +286,7 @@ function renderLeads() {
 
   filteredLeads.forEach((lead) => {
     const card = document.createElement("article");
-    card.className = "lead-card";
+    card.className = lead.priority ? "lead-card is-priority" : "lead-card";
 
     const header = document.createElement("div");
     header.className = "lead-card-header";
@@ -254,6 +310,10 @@ function renderLeads() {
 
     const meta = document.createElement("div");
     meta.className = "lead-meta";
+
+    if (lead.priority) {
+      meta.append(createMetaChip("Prioridade", "meta-chip priority-chip"));
+    }
 
     if (lead.link) {
       const link = document.createElement("a");
@@ -280,6 +340,12 @@ function renderLeads() {
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
+    const priorityButton = document.createElement("button");
+    priorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
+    priorityButton.type = "button";
+    priorityButton.textContent = lead.priority ? "Remover prioridade" : "Priorizar";
+    priorityButton.addEventListener("click", () => togglePriority(lead.id));
+
     const editButton = document.createElement("button");
     editButton.className = "secondary-button";
     editButton.type = "button";
@@ -292,7 +358,7 @@ function renderLeads() {
     deleteButton.textContent = "Excluir";
     deleteButton.addEventListener("click", () => deleteLead(lead.id));
 
-    actions.append(editButton, deleteButton);
+    actions.append(priorityButton, editButton, deleteButton);
     card.append(header, meta, notes, actions);
     fragment.append(card);
   });
