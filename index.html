@@ -37,11 +37,44 @@
           </article>
         </section>
 
-        <section class="list-tools" aria-label="Ferramentas de busca">
+        <section class="list-tools" aria-label="Ferramentas de busca e filtros">
           <label class="search-box">
             <span>Buscar</span>
             <input id="searchInput" type="search" placeholder="Filtrar por nome, contato, link ou obs">
           </label>
+          <label class="filter-field">
+            <span>Link</span>
+            <select id="linkFilter">
+              <option value="all">Todos</option>
+              <option value="with">Com link</option>
+              <option value="without">Sem link</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Obs.</span>
+            <select id="notesFilter">
+              <option value="all">Todas</option>
+              <option value="with">Com obs.</option>
+              <option value="without">Sem obs.</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Contato</span>
+            <select id="contactFilter">
+              <option value="all">Todos</option>
+              <option value="with">Com contato</option>
+              <option value="without">Sem contato</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Prioridade</span>
+            <select id="priorityFilter">
+              <option value="all">Todas</option>
+              <option value="priority">Priorit&aacute;rios</option>
+              <option value="normal">Normais</option>
+            </select>
+          </label>
+          <button class="secondary-button" type="button" id="clearFiltersButton">Limpar</button>
           <button class="secondary-button icon-button" type="button" id="refreshButton" aria-label="Atualizar leads" title="Atualizar leads">&#8635;</button>
           <button class="primary-button" type="button" id="newLeadButton">Novo lead</button>
         </section>
