@@ -32,6 +32,8 @@ const linkLeads = document.querySelector("#linkLeads");
 const priorityLeads = document.querySelector("#priorityLeads");
 const leadDetailsDialog = document.querySelector("#leadDetailsDialog");
 const closeDetailsModalButton = document.querySelector("#closeDetailsModalButton");
+const previousLeadButton = document.querySelector("#previousLeadButton");
+const nextLeadButton = document.querySelector("#nextLeadButton");
 const detailsLeadName = document.querySelector("#detailsLeadName");
 const detailsAvatar = document.querySelector("#detailsAvatar");
 const detailsDate = document.querySelector("#detailsDate");
@@ -49,6 +51,7 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 let leads = [];
+let visibleLeads = [];
 let activeDetailsLeadId = "";
 
 function endpoint(path = "") {
@@ -380,6 +383,64 @@ function clearFilters() {
   renderLeads();
 }
 
+function getFilteredLeads() {
+  const term = normalizeSearchText(searchInput.value.trim());
+
+  return leads.filter((lead) => {
+    const matchesSearch = !term || leadMatchesSearch(lead, term);
+    return matchesSearch && leadMatchesFilters(lead);
+  });
+}
+
+function getDetailsNavigationState() {
+  const currentIndex = visibleLeads.findIndex((lead) => lead.id === activeDetailsLeadId);
+
+  return {
+    currentIndex,
+    previousLead: currentIndex > 0 ? visibleLeads[currentIndex - 1] : null,
+    nextLead: currentIndex >= 0 && currentIndex < visibleLeads.length - 1 ? visibleLeads[currentIndex + 1] : null
+  };
+}
+
+function getLeadDisplayName(lead) {
+  return lead?.name || "Lead sem nome";
+}
+
+function updateDetailsNavigation() {
+  const { previousLead, nextLead } = getDetailsNavigationState();
+
+  previousLeadButton.disabled = !previousLead;
+  nextLeadButton.disabled = !nextLead;
+  previousLeadButton.title = previousLead ? `Lead anterior: ${getLeadDisplayName(previousLead)}` : "Nenhum lead anterior";
+  nextLeadButton.title = nextLead ? `Proximo lead: ${getLeadDisplayName(nextLead)}` : "Nenhum proximo lead";
+  previousLeadButton.setAttribute("aria-label", previousLeadButton.title);
+  nextLeadButton.setAttribute("aria-label", nextLeadButton.title);
+}
+
+function navigateLeadDetails(direction) {
+  const { previousLead, nextLead } = getDetailsNavigationState();
+  const targetLead = direction < 0 ? previousLead : nextLead;
+
+  if (!targetLead) {
+    return;
+  }
+
+  renderLeadDetails(targetLead);
+}
+
+function handleLeadRowKeydown(event, leadId) {
+  if (event.target !== event.currentTarget) {
+    return;
+  }
+
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  event.preventDefault();
+  openLeadDetails(leadId);
+}
+
 async function writeClipboardText(text) {
   if (navigator.clipboard?.writeText) {
     try {
@@ -490,6 +551,7 @@ function renderLeadDetails(lead) {
   detailsNotes.textContent = lead.notes || "Sem observa\u00e7\u00f5es.";
   detailsPriorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
   detailsPriorityButton.textContent = lead.priority ? "Remover prioridade" : "Priorizar";
+  updateDetailsNavigation();
 }
 
 function openLeadDetails(id) {
@@ -510,10 +572,8 @@ function closeDetailsModal() {
 
 function renderLeads() {
   const term = normalizeSearchText(searchInput.value.trim());
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch = !term || leadMatchesSearch(lead, term);
-    return matchesSearch && leadMatchesFilters(lead);
-  });
+  const filteredLeads = getFilteredLeads();
+  visibleLeads = filteredLeads;
 
   renderMetrics();
   leadList.innerHTML = "";
@@ -526,6 +586,11 @@ function renderLeads() {
   filteredLeads.forEach((lead) => {
     const row = document.createElement("article");
     row.className = lead.priority ? "lead-row is-priority" : "lead-row";
+    row.tabIndex = 0;
+    row.title = "Abrir detalhes do lead";
+    row.setAttribute("aria-label", `Abrir detalhes do lead ${lead.name || "sem nome"}`);
+    row.addEventListener("click", () => openLeadDetails(lead.id));
+    row.addEventListener("keydown", (event) => handleLeadRowKeydown(event, lead.id));
 
     const identity = document.createElement("div");
     identity.className = "lead-identity";
@@ -580,6 +645,7 @@ function renderLeads() {
 
     const actions = document.createElement("div");
     actions.className = "row-actions";
+    actions.addEventListener("click", (event) => event.stopPropagation());
 
     const priorityButton = document.createElement("button");
     priorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
@@ -595,12 +661,6 @@ function renderLeads() {
     copyButton.setAttribute("aria-label", `Copiar nome do lead ${lead.name || "sem nome"}`);
     copyButton.addEventListener("click", () => copyLeadName(lead.name, copyButton));
 
-    const detailsButton = document.createElement("button");
-    detailsButton.className = "secondary-button";
-    detailsButton.type = "button";
-    detailsButton.textContent = "Detalhes";
-    detailsButton.addEventListener("click", () => openLeadDetails(lead.id));
-
     const editButton = document.createElement("button");
     editButton.className = "secondary-button";
     editButton.type = "button";
@@ -613,12 +673,16 @@ function renderLeads() {
     deleteButton.textContent = "Excluir";
     deleteButton.addEventListener("click", () => deleteLead(lead.id));
 
-    actions.append(copyButton, priorityButton, detailsButton, editButton, deleteButton);
+    actions.append(copyButton, priorityButton, editButton, deleteButton);
     row.append(identity, contact, meta, updated, actions);
     fragment.append(row);
   });
 
   leadList.append(fragment);
+
+  if (leadDetailsDialog.open) {
+    updateDetailsNavigation();
+  }
 }
 
 leadForm.addEventListener("submit", saveLead);
@@ -643,6 +707,8 @@ contactFilter.addEventListener("change", renderLeads);
 priorityFilter.addEventListener("change", renderLeads);
 clearFiltersButton.addEventListener("click", clearFilters);
 closeDetailsModalButton.addEventListener("click", closeDetailsModal);
+previousLeadButton.addEventListener("click", () => navigateLeadDetails(-1));
+nextLeadButton.addEventListener("click", () => navigateLeadDetails(1));
 leadDetailsDialog.addEventListener("click", (event) => {
   if (event.target === leadDetailsDialog) {
     closeDetailsModal();
@@ -664,6 +730,21 @@ detailsEditButton.addEventListener("click", () => {
 detailsDeleteButton.addEventListener("click", () => {
   if (activeDetailsLeadId) {
     deleteLead(activeDetailsLeadId);
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (!leadDetailsDialog.open) {
+    return;
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    navigateLeadDetails(-1);
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    navigateLeadDetails(1);
   }
 });
 
