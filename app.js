@@ -187,10 +187,11 @@ async function saveLead(event) {
 
   submitButton.disabled = true;
   const currentId = leadIdInput.value;
+  const isEditing = Boolean(currentId);
   const payload = getFormLead();
 
   try {
-    if (currentId) {
+    if (isEditing) {
       await requestFirebase(`/${currentId}`, {
         method: "PATCH",
         body: JSON.stringify(payload)
@@ -205,9 +206,12 @@ async function saveLead(event) {
       });
     }
 
-    closeDialog(leadFormDialog);
-    resetForm();
     await loadLeads();
+
+    if (!isEditing) {
+      closeDialog(leadFormDialog);
+      resetForm();
+    }
   } catch (error) {
     console.error(error);
     setStatus("Erro ao salvar", "is-error");
