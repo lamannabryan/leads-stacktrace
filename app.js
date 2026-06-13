@@ -63,6 +63,7 @@ const detailsContact = document.querySelector("#detailsContact");
 const detailsLink = document.querySelector("#detailsLink");
 const detailsNotes = document.querySelector("#detailsNotes");
 const detailsPriorityButton = document.querySelector("#detailsPriorityButton");
+const detailsGoogleButton = document.querySelector("#detailsGoogleButton");
 const detailsEditButton = document.querySelector("#detailsEditButton");
 const detailsDeleteButton = document.querySelector("#detailsDeleteButton");
 const randomNoNotesButton = document.querySelector("#randomNoNotesButton");
@@ -953,11 +954,16 @@ function renderLeadDetails(lead) {
   detailsNotes.textContent = lead.notes || "Sem observa\u00e7\u00f5es.";
   detailsPriorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
   detailsPriorityButton.textContent = lead.priority ? "Remover prioridade" : "Priorizar";
+  detailsGoogleButton.disabled = !lead.name.trim();
+  detailsGoogleButton.title = lead.name.trim()
+    ? `Pesquisar ${lead.name.trim()} no Google`
+    : "Lead sem nome para pesquisar";
+  detailsGoogleButton.setAttribute("aria-label", detailsGoogleButton.title);
   updateDetailsNavigation();
 }
 
 function openLeadDetails(id) {
-  const lead = leads.find((item) => item.id === id);
+  const lead = getLeadById(id);
 
   if (!lead) {
     return;
@@ -970,6 +976,18 @@ function openLeadDetails(id) {
 function closeDetailsModal() {
   closeDialog(leadDetailsDialog);
   activeDetailsLeadId = "";
+}
+
+function searchActiveLeadOnGoogle() {
+  const lead = getLeadById(activeDetailsLeadId);
+  const leadName = lead?.name.trim();
+
+  if (!leadName) {
+    return;
+  }
+
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(leadName)}`;
+  window.open(searchUrl, "_blank", "noopener,noreferrer");
 }
 
 function getNoNotesLeads() {
@@ -1209,6 +1227,7 @@ detailsPriorityButton.addEventListener("click", () => {
     togglePriority(activeDetailsLeadId);
   }
 });
+detailsGoogleButton.addEventListener("click", searchActiveLeadOnGoogle);
 detailsEditButton.addEventListener("click", () => {
   if (activeDetailsLeadId) {
     editLead(activeDetailsLeadId);
