@@ -1,4 +1,4 @@
-const CACHE_NAME = "leads-stacktrace-v7";
+const CACHE_NAME = "leads-stacktrace-v8";
 const APP_SHELL = [
   "./",
   "./index.html",

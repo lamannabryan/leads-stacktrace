@@ -6,6 +6,10 @@ const leadIdInput = document.querySelector("#leadId");
 const nameInput = document.querySelector("#name");
 const linkInput = document.querySelector("#link");
 const contactInput = document.querySelector("#contact");
+const stageInput = document.querySelector("#stage");
+const sourceInput = document.querySelector("#source");
+const dealValueInput = document.querySelector("#dealValue");
+const nextActionDateInput = document.querySelector("#nextActionDate");
 const notesInput = document.querySelector("#notes");
 const priorityInput = document.querySelector("#priority");
 const leadFormDialog = document.querySelector("#leadFormDialog");
@@ -18,6 +22,8 @@ const newLeadButton = document.querySelector("#newLeadButton");
 const quickNewLeadButton = document.querySelector("#quickNewLeadButton");
 const refreshButton = document.querySelector("#refreshButton");
 const searchInput = document.querySelector("#searchInput");
+const stageFilter = document.querySelector("#stageFilter");
+const sourceFilter = document.querySelector("#sourceFilter");
 const linkFilter = document.querySelector("#linkFilter");
 const notesFilter = document.querySelector("#notesFilter");
 const contactFilter = document.querySelector("#contactFilter");
@@ -30,7 +36,16 @@ const syncStatus = document.querySelector("#syncStatus");
 const totalLeads = document.querySelector("#totalLeads");
 const contactLeads = document.querySelector("#contactLeads");
 const linkLeads = document.querySelector("#linkLeads");
+const activePipelineLeads = document.querySelector("#activePipelineLeads");
+const pipelineValueLeads = document.querySelector("#pipelineValueLeads");
+const nextActionLeads = document.querySelector("#nextActionLeads");
 const priorityLeads = document.querySelector("#priorityLeads");
+const dashboardPipelineValue = document.querySelector("#dashboardPipelineValue");
+const dashboardPipelineSummary = document.querySelector("#dashboardPipelineSummary");
+const dashboardStageTotal = document.querySelector("#dashboardStageTotal");
+const dashboardStageList = document.querySelector("#dashboardStageList");
+const dashboardFocusCount = document.querySelector("#dashboardFocusCount");
+const dashboardFocusSummary = document.querySelector("#dashboardFocusSummary");
 const leadDetailsDialog = document.querySelector("#leadDetailsDialog");
 const closeDetailsModalButton = document.querySelector("#closeDetailsModalButton");
 const previousLeadButton = document.querySelector("#previousLeadButton");
@@ -39,6 +54,10 @@ const detailsLeadName = document.querySelector("#detailsLeadName");
 const detailsAvatar = document.querySelector("#detailsAvatar");
 const detailsDate = document.querySelector("#detailsDate");
 const detailsBadges = document.querySelector("#detailsBadges");
+const detailsStage = document.querySelector("#detailsStage");
+const detailsSource = document.querySelector("#detailsSource");
+const detailsDealValue = document.querySelector("#detailsDealValue");
+const detailsNextAction = document.querySelector("#detailsNextAction");
 const detailsContact = document.querySelector("#detailsContact");
 const detailsLink = document.querySelector("#detailsLink");
 const detailsNotes = document.querySelector("#detailsNotes");
@@ -59,11 +78,42 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "short"
 });
 
+const fullDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric"
+});
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL"
+});
+
 const THEME_STORAGE_KEY = "leads-stacktrace-theme";
 const THEME_COLORS = {
   light: "#F2E9EA",
   dark: "#555354"
 };
+
+const LEAD_STAGE_LABELS = {
+  new: "Novo lead",
+  contacted: "Contato feito",
+  qualified: "Qualificado",
+  proposal: "Proposta",
+  won: "Ganho",
+  lost: "Perdido"
+};
+
+const LEAD_SOURCE_LABELS = {
+  instagram: "Instagram",
+  site: "Site",
+  whatsapp: "WhatsApp",
+  referral: "Indica\u00e7\u00e3o",
+  prospecting: "Prospec\u00e7\u00e3o",
+  other: "Outra"
+};
+
+const OPEN_PIPELINE_STAGES = new Set(["new", "contacted", "qualified", "proposal"]);
 
 let leads = [];
 let visibleLeads = [];
@@ -172,12 +222,62 @@ function closeDialog(dialog) {
   dialog.removeAttribute("open");
 }
 
+function normalizeStage(stage) {
+  return Object.prototype.hasOwnProperty.call(LEAD_STAGE_LABELS, stage) ? stage : "new";
+}
+
+function normalizeSource(source) {
+  return Object.prototype.hasOwnProperty.call(LEAD_SOURCE_LABELS, source) ? source : "";
+}
+
+function parseDealValue(value) {
+  const rawValue = String(value ?? "").trim();
+  const normalizedValue = rawValue.includes(",")
+    ? rawValue.replace(/\./g, "").replace(",", ".")
+    : rawValue;
+  const parsedValue = Number(normalizedValue);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 0;
+}
+
+function getStageLabel(stage) {
+  return LEAD_STAGE_LABELS[normalizeStage(stage)];
+}
+
+function getSourceLabel(source) {
+  const normalizedSource = normalizeSource(source);
+  return normalizedSource ? LEAD_SOURCE_LABELS[normalizedSource] : "Sem origem";
+}
+
+function formatDealValue(value) {
+  return currencyFormatter.format(parseDealValue(value));
+}
+
+function formatDateValue(value) {
+  if (!hasLeadField(value)) {
+    return "";
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "";
+  }
+
+  return fullDateFormatter.format(new Date(`${value}T00:00:00`));
+}
+
+function isPipelineOpen(lead) {
+  return OPEN_PIPELINE_STAGES.has(normalizeStage(lead.stage));
+}
+
 function normalizeLead(id, data) {
   return {
     id,
     name: data?.name ?? "",
     link: data?.link ?? "",
     contact: data?.contact ?? "",
+    stage: normalizeStage(data?.stage),
+    source: normalizeSource(data?.source),
+    dealValue: parseDealValue(data?.dealValue),
+    nextActionDate: data?.nextActionDate ?? "",
     notes: data?.notes ?? "",
     priority: Boolean(data?.priority),
     createdAt: data?.createdAt ?? 0,
@@ -192,6 +292,10 @@ function getFormLead() {
     name: nameInput.value.trim(),
     link: linkInput.value.trim(),
     contact: contactInput.value.trim(),
+    stage: normalizeStage(stageInput.value),
+    source: normalizeSource(sourceInput.value),
+    dealValue: parseDealValue(dealValueInput.value),
+    nextActionDate: nextActionDateInput.value,
     notes: notesInput.value.trim(),
     priority: priorityInput.checked,
     updatedAt: now
@@ -399,6 +503,10 @@ function editLead(id) {
   nameInput.value = lead.name;
   linkInput.value = lead.link;
   contactInput.value = lead.contact;
+  stageInput.value = normalizeStage(lead.stage);
+  sourceInput.value = normalizeSource(lead.source);
+  dealValueInput.value = lead.dealValue || "";
+  nextActionDateInput.value = lead.nextActionDate || "";
   notesInput.value = lead.notes;
   priorityInput.checked = lead.priority;
   formModalEyebrow.textContent = "Editar registro";
@@ -412,6 +520,10 @@ function editLead(id) {
 function resetForm() {
   leadForm.reset();
   leadIdInput.value = "";
+  stageInput.value = "new";
+  sourceInput.value = "";
+  dealValueInput.value = "";
+  nextActionDateInput.value = "";
   formModalEyebrow.textContent = "Novo registro";
   formModalTitle.textContent = "Cadastrar lead";
   submitButton.textContent = "Salvar lead";
@@ -431,7 +543,8 @@ function normalizeSearchText(value) {
 
 function leadMatchesSearch(lead, term) {
   const priorityKeywords = lead.priority ? "prioridade prioritario prioritarios" : "";
-  const haystack = normalizeSearchText(`${lead.name} ${lead.link} ${lead.contact} ${lead.notes} ${priorityKeywords}`);
+  const crmKeywords = `${getStageLabel(lead.stage)} ${getSourceLabel(lead.source)} ${formatDealValue(lead.dealValue)} ${formatDateValue(lead.nextActionDate)}`;
+  const haystack = normalizeSearchText(`${lead.name} ${lead.link} ${lead.contact} ${lead.notes} ${crmKeywords} ${priorityKeywords}`);
   return haystack.includes(term);
 }
 
@@ -452,6 +565,11 @@ function matchesPresenceFilter(hasValue, filterValue) {
 }
 
 function leadMatchesFilters(lead) {
+  const matchesStage = stageFilter.value === "all" || normalizeStage(lead.stage) === stageFilter.value;
+  const matchesSource =
+    sourceFilter.value === "all" ||
+    (sourceFilter.value === "none" && !hasLeadField(lead.source)) ||
+    normalizeSource(lead.source) === sourceFilter.value;
   const matchesLink = matchesPresenceFilter(hasLeadField(lead.link), linkFilter.value);
   const matchesNotes = matchesPresenceFilter(hasLeadField(lead.notes), notesFilter.value);
   const matchesContact = matchesPresenceFilter(hasLeadField(lead.contact), contactFilter.value);
@@ -460,11 +578,13 @@ function leadMatchesFilters(lead) {
     (priorityFilter.value === "priority" && lead.priority) ||
     (priorityFilter.value === "normal" && !lead.priority);
 
-  return matchesLink && matchesNotes && matchesContact && matchesPriority;
+  return matchesStage && matchesSource && matchesLink && matchesNotes && matchesContact && matchesPriority;
 }
 
 function hasActiveFilters(term) {
   return Boolean(term) ||
+    stageFilter.value !== "all" ||
+    sourceFilter.value !== "all" ||
     linkFilter.value !== "all" ||
     notesFilter.value !== "all" ||
     contactFilter.value !== "all" ||
@@ -473,6 +593,8 @@ function hasActiveFilters(term) {
 
 function clearFilters() {
   searchInput.value = "";
+  stageFilter.value = "all";
+  sourceFilter.value = "all";
   linkFilter.value = "all";
   notesFilter.value = "all";
   contactFilter.value = "all";
@@ -594,6 +716,13 @@ function renderMetrics() {
   totalLeads.textContent = leads.length;
   contactLeads.textContent = leads.filter((lead) => lead.contact).length;
   linkLeads.textContent = leads.filter((lead) => lead.link).length;
+  activePipelineLeads.textContent = leads.filter(isPipelineOpen).length;
+  pipelineValueLeads.textContent = formatDealValue(
+    leads
+      .filter((lead) => normalizeStage(lead.stage) !== "lost")
+      .reduce((total, lead) => total + parseDealValue(lead.dealValue), 0)
+  );
+  nextActionLeads.textContent = leads.filter((lead) => hasLeadField(lead.nextActionDate)).length;
   priorityLeads.textContent = leads.filter((lead) => lead.priority).length;
 }
 
@@ -604,6 +733,35 @@ function createMetaChip(text, className = "meta-chip") {
   return chip;
 }
 
+function renderDashboardStageList(stageCounts, maxStageCount) {
+  dashboardStageList.innerHTML = "";
+
+  const fragment = document.createDocumentFragment();
+
+  Object.keys(LEAD_STAGE_LABELS).forEach((stage) => {
+    const count = stageCounts[stage] || 0;
+    const percent = maxStageCount > 0 ? Math.max(8, Math.round((count / maxStageCount) * 100)) : 0;
+
+    const item = document.createElement("div");
+    item.className = "stage-item";
+
+    const label = document.createElement("span");
+    label.textContent = getStageLabel(stage);
+
+    const value = document.createElement("strong");
+    value.textContent = count;
+
+    const bar = document.createElement("div");
+    bar.className = "stage-bar";
+    bar.style.setProperty("--stage-progress", `${percent}%`);
+
+    item.append(label, value, bar);
+    fragment.append(item);
+  });
+
+  dashboardStageList.append(fragment);
+}
+
 function renderLeadDetails(lead) {
   activeDetailsLeadId = lead.id;
   detailsLeadName.textContent = lead.name || "Lead sem nome";
@@ -612,6 +770,7 @@ function renderLeadDetails(lead) {
   detailsDate.textContent = formatLeadDate(lead.updatedAt || lead.createdAt) || "Sem atualiza\u00e7\u00e3o";
 
   detailsBadges.innerHTML = "";
+  detailsBadges.append(createMetaChip(getStageLabel(lead.stage), "meta-chip stage-chip"));
 
   if (lead.priority) {
     detailsBadges.append(createMetaChip("Prioridade", "meta-chip priority-chip"));
@@ -627,10 +786,26 @@ function renderLeadDetails(lead) {
     detailsBadges.append(createMetaChip("Com contato"));
   }
 
+  if (lead.source) {
+    detailsBadges.append(createMetaChip(getSourceLabel(lead.source)));
+  }
+
+  if (lead.dealValue) {
+    detailsBadges.append(createMetaChip(formatDealValue(lead.dealValue)));
+  }
+
+  if (lead.nextActionDate) {
+    detailsBadges.append(createMetaChip(`A\u00e7\u00e3o: ${formatDateValue(lead.nextActionDate)}`));
+  }
+
   if (lead.notes) {
     detailsBadges.append(createMetaChip("Com obs."));
   }
 
+  detailsStage.textContent = getStageLabel(lead.stage);
+  detailsSource.textContent = getSourceLabel(lead.source);
+  detailsDealValue.textContent = lead.dealValue ? formatDealValue(lead.dealValue) : "Sem valor";
+  detailsNextAction.textContent = formatDateValue(lead.nextActionDate) || "Sem data";
   detailsContact.textContent = lead.contact || "Sem contato";
   detailsLink.innerHTML = "";
 
@@ -731,7 +906,9 @@ function renderLeads() {
 
     const leadHint = document.createElement("span");
     leadHint.className = "lead-date";
-    leadHint.textContent = lead.link ? "Link dispon\u00edvel" : "Sem link";
+    leadHint.textContent = lead.dealValue
+      ? `${getStageLabel(lead.stage)} - ${formatDealValue(lead.dealValue)}`
+      : getStageLabel(lead.stage);
 
     titleGroup.append(title, leadHint);
     identity.append(avatar, titleGroup);
@@ -742,6 +919,7 @@ function renderLeads() {
 
     const meta = document.createElement("div");
     meta.className = "lead-meta";
+    meta.append(createMetaChip(getStageLabel(lead.stage), "meta-chip stage-chip"));
 
     if (lead.priority) {
       meta.append(createMetaChip("Prioridade", "meta-chip priority-chip"));
@@ -757,6 +935,18 @@ function renderLeads() {
 
     if (lead.contact) {
       meta.append(createMetaChip("Com contato"));
+    }
+
+    if (lead.source) {
+      meta.append(createMetaChip(getSourceLabel(lead.source)));
+    }
+
+    if (lead.dealValue) {
+      meta.append(createMetaChip(formatDealValue(lead.dealValue)));
+    }
+
+    if (lead.nextActionDate) {
+      meta.append(createMetaChip(formatDateValue(lead.nextActionDate)));
     }
 
     if (lead.notes) {
@@ -826,6 +1016,8 @@ newLeadButton.addEventListener("click", openNewLeadModal);
 quickNewLeadButton.addEventListener("click", openNewLeadModal);
 refreshButton.addEventListener("click", loadLeads);
 searchInput.addEventListener("input", renderLeads);
+stageFilter.addEventListener("change", renderLeads);
+sourceFilter.addEventListener("change", renderLeads);
 linkFilter.addEventListener("change", renderLeads);
 notesFilter.addEventListener("change", renderLeads);
 contactFilter.addEventListener("change", renderLeads);

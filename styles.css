@@ -207,7 +207,7 @@ h2 {
 
 h1 {
   color: var(--text);
-  font-size: clamp(2rem, 4vw, 3.7rem);
+  font-size: 25px;
   font-family: var(--font-display);
   font-weight: 400;
   line-height: 0.98;
@@ -410,7 +410,7 @@ h2 {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
   gap: 12px;
 }
 
@@ -439,7 +439,7 @@ h2 {
 
 .metric-card strong {
   color: var(--text);
-  font-size: 2.15rem;
+  font-size: clamp(1.35rem, 2vw, 2.15rem);
   font-weight: 760;
   line-height: 1;
 }
@@ -628,7 +628,7 @@ select:focus {
 }
 
 .filter-row {
-  grid-template-columns: repeat(4, minmax(128px, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(118px, 1fr)) auto;
 }
 
 .search-box {
@@ -872,6 +872,12 @@ select:focus {
   border-color: rgba(226, 93, 31, 0.28);
   background: var(--orange-soft);
   color: var(--priority-text);
+}
+
+.stage-chip {
+  border-color: rgba(226, 26, 89, 0.22);
+  background: var(--red-soft);
+  color: var(--danger-text);
 }
 
 .row-actions {

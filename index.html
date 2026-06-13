@@ -32,7 +32,7 @@
             <img class="app-logo" src="icons/logo-bear-logo.png" alt="" width="64" height="64">
             <div class="brand-copy">
               <p class="eyebrow">Pipeline comercial</p>
-              <h1>Leads Stacktrace</h1>
+              <h1 style="font-size: 20px !important;">Leads Stacktrace</h1>
             </div>
           </div>
           <div class="topbar-actions">
@@ -64,6 +64,28 @@
             <button class="primary-button compact-action" type="button" data-go-view="leads">Ver leads</button>
           </div>
 
+          <section class="dashboard-overview" aria-label="Indicadores principais do CRM">
+            <article class="dashboard-hero">
+              <span>Pipeline estimado</span>
+              <strong id="dashboardPipelineValue">R$ 0</strong>
+              <p id="dashboardPipelineSummary">0 leads em andamento</p>
+            </article>
+            <article class="dashboard-panel">
+              <div class="panel-heading">
+                <span>Funil</span>
+                <strong id="dashboardStageTotal">0</strong>
+              </div>
+              <div class="stage-list" id="dashboardStageList" aria-label="Leads por etapa"></div>
+            </article>
+            <article class="dashboard-panel">
+              <div class="panel-heading">
+                <span>Foco</span>
+                <strong id="dashboardFocusCount">0</strong>
+              </div>
+              <p class="dashboard-panel-copy" id="dashboardFocusSummary">Sem a&ccedil;&otilde;es pendentes.</p>
+            </article>
+          </section>
+
           <section class="metrics-grid" aria-label="Resumo dos leads">
             <article class="metric-card">
               <span>Total de leads</span>
@@ -76,6 +98,18 @@
             <article class="metric-card">
               <span>Com link</span>
               <strong id="linkLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Em andamento</span>
+              <strong id="activePipelineLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Valor estimado</span>
+              <strong id="pipelineValueLeads">R$ 0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Pr&oacute;ximas a&ccedil;&otilde;es</span>
+              <strong id="nextActionLeads">0</strong>
             </article>
             <article class="metric-card">
               <span>Priorit&aacute;rios</span>
@@ -106,6 +140,31 @@
             </div>
 
             <div class="tool-row filter-row">
+              <label class="filter-field">
+                <span>Etapa</span>
+                <select id="stageFilter">
+                  <option value="all">Todas</option>
+                  <option value="new">Novo lead</option>
+                  <option value="contacted">Contato feito</option>
+                  <option value="qualified">Qualificado</option>
+                  <option value="proposal">Proposta</option>
+                  <option value="won">Ganho</option>
+                  <option value="lost">Perdido</option>
+                </select>
+              </label>
+              <label class="filter-field">
+                <span>Origem</span>
+                <select id="sourceFilter">
+                  <option value="all">Todas</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="site">Site</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="referral">Indica&ccedil;&atilde;o</option>
+                  <option value="prospecting">Prospec&ccedil;&atilde;o</option>
+                  <option value="other">Outra</option>
+                  <option value="none">Sem origem</option>
+                </select>
+              </label>
               <label class="filter-field">
                 <span>Link</span>
                 <select id="linkFilter">
@@ -194,6 +253,41 @@
             <input id="contact" name="contact" type="text" placeholder="Telefone, email ou WhatsApp" autocomplete="email">
           </label>
 
+          <label>
+            <span>Etapa do funil</span>
+            <select id="stage" name="stage">
+              <option value="new">Novo lead</option>
+              <option value="contacted">Contato feito</option>
+              <option value="qualified">Qualificado</option>
+              <option value="proposal">Proposta</option>
+              <option value="won">Ganho</option>
+              <option value="lost">Perdido</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Origem</span>
+            <select id="source" name="source">
+              <option value="">Sem origem</option>
+              <option value="instagram">Instagram</option>
+              <option value="site">Site</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="referral">Indica&ccedil;&atilde;o</option>
+              <option value="prospecting">Prospec&ccedil;&atilde;o</option>
+              <option value="other">Outra</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Valor estimado</span>
+            <input id="dealValue" name="dealValue" type="text" placeholder="0,00" inputmode="decimal">
+          </label>
+
+          <label>
+            <span>Pr&oacute;xima a&ccedil;&atilde;o</span>
+            <input id="nextActionDate" name="nextActionDate" type="date">
+          </label>
+
           <label class="full-field">
             <span>Observa&ccedil;&otilde;es</span>
             <textarea id="notes" name="notes" rows="4" placeholder="Detalhes importantes sobre o lead"></textarea>
@@ -235,6 +329,22 @@
         </section>
 
         <section class="details-grid" aria-label="Informa&ccedil;&otilde;es do lead">
+          <article class="detail-block">
+            <span>Etapa</span>
+            <p id="detailsStage">Novo lead</p>
+          </article>
+          <article class="detail-block">
+            <span>Origem</span>
+            <p id="detailsSource">Sem origem</p>
+          </article>
+          <article class="detail-block">
+            <span>Valor estimado</span>
+            <p id="detailsDealValue">R$ 0</p>
+          </article>
+          <article class="detail-block">
+            <span>Pr&oacute;xima a&ccedil;&atilde;o</span>
+            <p id="detailsNextAction">Sem data</p>
+          </article>
           <article class="detail-block">
             <span>Contato</span>
             <p id="detailsContact">Sem contato</p>
