@@ -31,6 +31,7 @@ const priorityFilter = document.querySelector("#priorityFilter");
 const clearFiltersButton = document.querySelector("#clearFiltersButton");
 const leadListShell = document.querySelector(".lead-list-shell");
 const leadList = document.querySelector("#leadList");
+const loadMoreLeadsButton = document.querySelector("#loadMoreLeadsButton");
 const emptyState = document.querySelector("#emptyState");
 const syncStatus = document.querySelector("#syncStatus");
 const totalLeads = document.querySelector("#totalLeads");
@@ -114,9 +115,13 @@ const LEAD_SOURCE_LABELS = {
 };
 
 const OPEN_PIPELINE_STAGES = new Set(["new", "contacted", "qualified", "proposal"]);
+const MOBILE_LIST_QUERY = "(max-width: 820px)";
+const LEAD_RENDER_BATCH_SIZE = 40;
+const mobileListQuery = window.matchMedia(MOBILE_LIST_QUERY);
 
 let leads = [];
 let visibleLeads = [];
+let visibleLeadLimit = LEAD_RENDER_BATCH_SIZE;
 let activeDetailsLeadId = "";
 let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 let activeView = "dashboard";
@@ -167,6 +172,14 @@ function toggleTheme() {
   setTheme(currentTheme === "dark" ? "light" : "dark");
 }
 
+function isCompactLeadList() {
+  return mobileListQuery.matches;
+}
+
+function resetLeadRenderLimit() {
+  visibleLeadLimit = LEAD_RENDER_BATCH_SIZE;
+}
+
 function setActiveView(view, shouldScroll = false) {
   activeView = view === "leads" ? "leads" : "dashboard";
 
@@ -188,7 +201,7 @@ function setActiveView(view, shouldScroll = false) {
     panel.hidden = !isActive;
   });
 
-  if (shouldScroll && window.matchMedia("(max-width: 820px)").matches) {
+  if (shouldScroll && isCompactLeadList()) {
     window.scrollTo({
       top: 0,
       behavior: "smooth"
@@ -360,6 +373,7 @@ async function loadLeads() {
       .map(([id, lead]) => normalizeLead(id, lead))
       .sort(sortLeads);
 
+    resetLeadRenderLimit();
     renderLeads();
     setStatus("Sincronizado", "is-ok");
   } catch (error) {
@@ -599,11 +613,16 @@ function clearFilters() {
   notesFilter.value = "all";
   contactFilter.value = "all";
   priorityFilter.value = "all";
+  resetLeadRenderLimit();
   renderLeads();
 }
 
 function getFilteredLeads() {
   const term = normalizeSearchText(searchInput.value.trim());
+
+  if (!hasActiveFilters(term)) {
+    return leads;
+  }
 
   return leads.filter((lead) => {
     const matchesSearch = !term || leadMatchesSearch(lead, term);
@@ -647,8 +666,69 @@ function navigateLeadDetails(direction) {
   renderLeadDetails(targetLead);
 }
 
-function handleLeadRowKeydown(event, leadId) {
-  if (event.target !== event.currentTarget) {
+function getLeadById(id) {
+  return leads.find((item) => item.id === id);
+}
+
+function handleLeadListClick(event) {
+  const target = event.target instanceof Element ? event.target : null;
+
+  if (!target) {
+    return;
+  }
+
+  const actionButton = target.closest("[data-lead-action]");
+
+  if (actionButton && leadList.contains(actionButton)) {
+    const row = actionButton.closest(".lead-row");
+    const leadId = row?.dataset.leadId;
+    const lead = getLeadById(leadId);
+
+    if (!lead) {
+      return;
+    }
+
+    if (actionButton.dataset.leadAction === "priority") {
+      togglePriority(lead.id);
+      return;
+    }
+
+    if (actionButton.dataset.leadAction === "copy") {
+      copyLeadName(lead.name, actionButton);
+      return;
+    }
+
+    if (actionButton.dataset.leadAction === "edit") {
+      editLead(lead.id);
+      return;
+    }
+
+    if (actionButton.dataset.leadAction === "delete") {
+      deleteLead(lead.id);
+      return;
+    }
+
+    return;
+  }
+
+  if (target.closest(".row-actions")) {
+    return;
+  }
+
+  const row = target.closest(".lead-row");
+
+  if (!row || !leadList.contains(row)) {
+    return;
+  }
+
+  openLeadDetails(row.dataset.leadId);
+}
+
+function handleLeadListKeydown(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  const row = target?.closest(".lead-row");
+
+  if (!row || target !== row) {
     return;
   }
 
@@ -657,7 +737,7 @@ function handleLeadRowKeydown(event, leadId) {
   }
 
   event.preventDefault();
-  openLeadDetails(leadId);
+  openLeadDetails(row.dataset.leadId);
 }
 
 async function writeClipboardText(text) {
@@ -712,18 +792,68 @@ async function copyLeadName(name, button) {
   }
 }
 
+function formatLeadCount(count) {
+  return `${count} ${count === 1 ? "lead" : "leads"}`;
+}
+
 function renderMetrics() {
+  let contactCount = 0;
+  let linkCount = 0;
+  let openPipelineCount = 0;
+  let pipelineTotalValue = 0;
+  let nextActionCount = 0;
+  let priorityCount = 0;
+  const stageCounts = Object.keys(LEAD_STAGE_LABELS).reduce((counts, stage) => {
+    counts[stage] = 0;
+    return counts;
+  }, {});
+
+  leads.forEach((lead) => {
+    const stage = normalizeStage(lead.stage);
+
+    stageCounts[stage] += 1;
+
+    if (lead.contact) {
+      contactCount += 1;
+    }
+
+    if (lead.link) {
+      linkCount += 1;
+    }
+
+    if (isPipelineOpen(lead)) {
+      openPipelineCount += 1;
+    }
+
+    if (stage !== "lost") {
+      pipelineTotalValue += parseDealValue(lead.dealValue);
+    }
+
+    if (hasLeadField(lead.nextActionDate)) {
+      nextActionCount += 1;
+    }
+
+    if (lead.priority) {
+      priorityCount += 1;
+    }
+  });
+  const maxStageCount = Math.max(0, ...Object.values(stageCounts));
+
   totalLeads.textContent = leads.length;
-  contactLeads.textContent = leads.filter((lead) => lead.contact).length;
-  linkLeads.textContent = leads.filter((lead) => lead.link).length;
-  activePipelineLeads.textContent = leads.filter(isPipelineOpen).length;
-  pipelineValueLeads.textContent = formatDealValue(
-    leads
-      .filter((lead) => normalizeStage(lead.stage) !== "lost")
-      .reduce((total, lead) => total + parseDealValue(lead.dealValue), 0)
-  );
-  nextActionLeads.textContent = leads.filter((lead) => hasLeadField(lead.nextActionDate)).length;
-  priorityLeads.textContent = leads.filter((lead) => lead.priority).length;
+  contactLeads.textContent = contactCount;
+  linkLeads.textContent = linkCount;
+  activePipelineLeads.textContent = openPipelineCount;
+  pipelineValueLeads.textContent = formatDealValue(pipelineTotalValue);
+  nextActionLeads.textContent = nextActionCount;
+  priorityLeads.textContent = priorityCount;
+  dashboardPipelineValue.textContent = formatDealValue(pipelineTotalValue);
+  dashboardPipelineSummary.textContent = `${formatLeadCount(openPipelineCount)} em andamento`;
+  dashboardStageTotal.textContent = leads.length;
+  dashboardFocusCount.textContent = nextActionCount + priorityCount;
+  dashboardFocusSummary.textContent = nextActionCount || priorityCount
+    ? `${formatLeadCount(nextActionCount)} com pr\u00f3xima a\u00e7\u00e3o e ${formatLeadCount(priorityCount)} priorit\u00e1rios.`
+    : "Sem a\u00e7\u00f5es pendentes.";
+  renderDashboardStageList(stageCounts, maxStageCount);
 }
 
 function createMetaChip(text, className = "meta-chip") {
@@ -868,9 +998,40 @@ function openRandomLeadWithoutNotes() {
   openLeadDetails(candidates[randomIndex].id);
 }
 
+function updateLoadMoreButton(totalCount, renderedCount) {
+  if (!loadMoreLeadsButton) {
+    return;
+  }
+
+  const remainingCount = totalCount - renderedCount;
+  const hasMoreLeads = isCompactLeadList() && remainingCount > 0;
+
+  loadMoreLeadsButton.hidden = !hasMoreLeads;
+
+  if (!hasMoreLeads) {
+    return;
+  }
+
+  const nextBatchCount = Math.min(LEAD_RENDER_BATCH_SIZE, remainingCount);
+  loadMoreLeadsButton.textContent = `Carregar mais ${nextBatchCount} ${nextBatchCount === 1 ? "lead" : "leads"}`;
+}
+
+function loadMoreLeads() {
+  visibleLeadLimit += LEAD_RENDER_BATCH_SIZE;
+  renderLeads();
+}
+
+function renderLeadsAfterFilterChange() {
+  resetLeadRenderLimit();
+  renderLeads();
+}
+
 function renderLeads() {
   const term = normalizeSearchText(searchInput.value.trim());
   const filteredLeads = getFilteredLeads();
+  const renderedLeads = isCompactLeadList()
+    ? filteredLeads.slice(0, visibleLeadLimit)
+    : filteredLeads;
   visibleLeads = filteredLeads;
 
   renderMetrics();
@@ -882,14 +1043,13 @@ function renderLeads() {
 
   const fragment = document.createDocumentFragment();
 
-  filteredLeads.forEach((lead) => {
+  renderedLeads.forEach((lead) => {
     const row = document.createElement("article");
     row.className = lead.priority ? "lead-row is-priority" : "lead-row";
     row.tabIndex = 0;
+    row.dataset.leadId = lead.id;
     row.title = "Abrir detalhes do lead";
     row.setAttribute("aria-label", `Abrir detalhes do lead ${lead.name || "sem nome"}`);
-    row.addEventListener("click", () => openLeadDetails(lead.id));
-    row.addEventListener("keydown", (event) => handleLeadRowKeydown(event, lead.id));
 
     const identity = document.createElement("div");
     identity.className = "lead-identity";
@@ -959,33 +1119,32 @@ function renderLeads() {
 
     const actions = document.createElement("div");
     actions.className = "row-actions";
-    actions.addEventListener("click", (event) => event.stopPropagation());
 
     const priorityButton = document.createElement("button");
     priorityButton.className = lead.priority ? "priority-button is-active" : "priority-button";
     priorityButton.type = "button";
+    priorityButton.dataset.leadAction = "priority";
     priorityButton.textContent = lead.priority ? "Remover prioridade" : "Priorizar";
-    priorityButton.addEventListener("click", () => togglePriority(lead.id));
 
     const copyButton = document.createElement("button");
     copyButton.className = "secondary-button";
     copyButton.type = "button";
+    copyButton.dataset.leadAction = "copy";
     copyButton.textContent = "Copiar";
     copyButton.title = "Copiar nome do lead";
     copyButton.setAttribute("aria-label", `Copiar nome do lead ${lead.name || "sem nome"}`);
-    copyButton.addEventListener("click", () => copyLeadName(lead.name, copyButton));
 
     const editButton = document.createElement("button");
     editButton.className = "secondary-button";
     editButton.type = "button";
+    editButton.dataset.leadAction = "edit";
     editButton.textContent = "Editar";
-    editButton.addEventListener("click", () => editLead(lead.id));
 
     const deleteButton = document.createElement("button");
     deleteButton.className = "danger-button";
     deleteButton.type = "button";
+    deleteButton.dataset.leadAction = "delete";
     deleteButton.textContent = "Excluir";
-    deleteButton.addEventListener("click", () => deleteLead(lead.id));
 
     actions.append(copyButton, priorityButton, editButton, deleteButton);
     row.append(identity, contact, meta, updated, actions);
@@ -993,6 +1152,7 @@ function renderLeads() {
   });
 
   leadList.append(fragment);
+  updateLoadMoreButton(filteredLeads.length, renderedLeads.length);
 
   if (leadDetailsDialog.open) {
     updateDetailsNavigation();
@@ -1015,14 +1175,17 @@ leadFormDialog.addEventListener("close", () => {
 newLeadButton.addEventListener("click", openNewLeadModal);
 quickNewLeadButton.addEventListener("click", openNewLeadModal);
 refreshButton.addEventListener("click", loadLeads);
-searchInput.addEventListener("input", renderLeads);
-stageFilter.addEventListener("change", renderLeads);
-sourceFilter.addEventListener("change", renderLeads);
-linkFilter.addEventListener("change", renderLeads);
-notesFilter.addEventListener("change", renderLeads);
-contactFilter.addEventListener("change", renderLeads);
-priorityFilter.addEventListener("change", renderLeads);
+searchInput.addEventListener("input", renderLeadsAfterFilterChange);
+stageFilter.addEventListener("change", renderLeadsAfterFilterChange);
+sourceFilter.addEventListener("change", renderLeadsAfterFilterChange);
+linkFilter.addEventListener("change", renderLeadsAfterFilterChange);
+notesFilter.addEventListener("change", renderLeadsAfterFilterChange);
+contactFilter.addEventListener("change", renderLeadsAfterFilterChange);
+priorityFilter.addEventListener("change", renderLeadsAfterFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
+loadMoreLeadsButton?.addEventListener("click", loadMoreLeads);
+leadList.addEventListener("click", handleLeadListClick);
+leadList.addEventListener("keydown", handleLeadListKeydown);
 themeToggleButton.addEventListener("click", toggleTheme);
 navTabs.forEach((tab) => {
   tab.addEventListener("click", () => setActiveView(tab.dataset.view, true));
@@ -1057,6 +1220,13 @@ detailsDeleteButton.addEventListener("click", () => {
   }
 });
 randomNoNotesButton.addEventListener("click", openRandomLeadWithoutNotes);
+
+if (typeof mobileListQuery.addEventListener === "function") {
+  mobileListQuery.addEventListener("change", renderLeadsAfterFilterChange);
+} else if (typeof mobileListQuery.addListener === "function") {
+  mobileListQuery.addListener(renderLeadsAfterFilterChange);
+}
+
 document.addEventListener("keydown", (event) => {
   if (!leadDetailsDialog.open) {
     return;
