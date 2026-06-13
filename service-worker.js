@@ -1,11 +1,15 @@
-const CACHE_NAME = "leads-stacktrace-v2";
+const CACHE_NAME = "leads-stacktrace-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
-  "./icons/icon.svg"
+  "./icons/logo-bear-logo.png",
+  "./icons/logo-bear-transparent.png",
+  "./icons/logo-bear-180.png",
+  "./icons/logo-bear-192.png",
+  "./icons/logo-bear-512.png"
 ];
 
 self.addEventListener("install", (event) => {

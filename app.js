@@ -15,6 +15,7 @@ const closeFormModalButton = document.querySelector("#closeFormModalButton");
 const submitButton = document.querySelector("#submitButton");
 const cancelEditButton = document.querySelector("#cancelEditButton");
 const newLeadButton = document.querySelector("#newLeadButton");
+const quickNewLeadButton = document.querySelector("#quickNewLeadButton");
 const refreshButton = document.querySelector("#refreshButton");
 const searchInput = document.querySelector("#searchInput");
 const linkFilter = document.querySelector("#linkFilter");
@@ -49,6 +50,9 @@ const themeToggleButton = document.querySelector("#themeToggleButton");
 const themeToggleIcon = document.querySelector("#themeToggleIcon");
 const themeToggleLabel = document.querySelector("#themeToggleLabel");
 const themeColorMeta = document.querySelector("meta[name='theme-color']");
+const navTabs = document.querySelectorAll("[data-view]");
+const viewPanels = document.querySelectorAll("[data-view-panel]");
+const viewLinks = document.querySelectorAll("[data-go-view]");
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -65,6 +69,7 @@ let leads = [];
 let visibleLeads = [];
 let activeDetailsLeadId = "";
 let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+let activeView = "dashboard";
 
 function endpoint(path = "") {
   return `${LEADS_ENDPOINT}${path}.json`;
@@ -72,7 +77,7 @@ function endpoint(path = "") {
 
 function setStatus(message, type = "") {
   syncStatus.textContent = message;
-  syncStatus.className = `status-pill ${type}`.trim();
+  syncStatus.className = `sync-status ${type}`.trim();
 }
 
 function updateThemeButton(theme) {
@@ -110,6 +115,39 @@ function setTheme(theme, shouldPersist = true) {
 
 function toggleTheme() {
   setTheme(currentTheme === "dark" ? "light" : "dark");
+}
+
+function setActiveView(view, shouldScroll = false) {
+  activeView = view === "leads" ? "leads" : "dashboard";
+
+  navTabs.forEach((tab) => {
+    const isActive = tab.dataset.view === activeView;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+
+    if (isActive) {
+      tab.setAttribute("aria-current", "page");
+    } else {
+      tab.removeAttribute("aria-current");
+    }
+  });
+
+  viewPanels.forEach((panel) => {
+    const isActive = panel.dataset.viewPanel === activeView;
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  });
+
+  if (shouldScroll && window.matchMedia("(max-width: 820px)").matches) {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+}
+
+function openLeadsView() {
+  setActiveView("leads");
 }
 
 function openDialog(dialog) {
@@ -344,6 +382,7 @@ async function togglePriority(id) {
 }
 
 function openNewLeadModal() {
+  openLeadsView();
   resetForm();
   openDialog(leadFormDialog);
   nameInput.focus();
@@ -784,6 +823,7 @@ leadFormDialog.addEventListener("close", () => {
   }
 });
 newLeadButton.addEventListener("click", openNewLeadModal);
+quickNewLeadButton.addEventListener("click", openNewLeadModal);
 refreshButton.addEventListener("click", loadLeads);
 searchInput.addEventListener("input", renderLeads);
 linkFilter.addEventListener("change", renderLeads);
@@ -792,6 +832,12 @@ contactFilter.addEventListener("change", renderLeads);
 priorityFilter.addEventListener("change", renderLeads);
 clearFiltersButton.addEventListener("click", clearFilters);
 themeToggleButton.addEventListener("click", toggleTheme);
+navTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setActiveView(tab.dataset.view, true));
+});
+viewLinks.forEach((link) => {
+  link.addEventListener("click", () => setActiveView(link.dataset.goView, true));
+});
 closeDetailsModalButton.addEventListener("click", closeDetailsModal);
 previousLeadButton.addEventListener("click", () => navigateLeadDetails(-1));
 nextLeadButton.addEventListener("click", () => navigateLeadDetails(1));
@@ -844,4 +890,5 @@ if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
 }
 
 setTheme(currentTheme, false);
+setActiveView(activeView);
 loadLeads();

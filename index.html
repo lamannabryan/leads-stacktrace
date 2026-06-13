@@ -17,8 +17,8 @@
       } catch (error) {}
     </script>
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
-    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/logo-bear-192.png">
+    <link rel="apple-touch-icon" href="icons/logo-bear-180.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,107 +29,141 @@
       <section class="workspace" aria-label="Gerenciador de leads">
         <header class="topbar">
           <div class="title-stack">
-            <p class="eyebrow">Pipeline comercial</p>
-            <h1>Leads Stacktrace</h1>
+            <img class="app-logo" src="icons/logo-bear-logo.png" alt="" width="64" height="64">
+            <div class="brand-copy">
+              <p class="eyebrow">Pipeline comercial</p>
+              <h1>Leads Stacktrace</h1>
+            </div>
           </div>
           <div class="topbar-actions">
             <button class="theme-toggle" type="button" id="themeToggleButton" aria-label="Usar modo escuro" aria-pressed="false" title="Usar modo escuro">
               <span id="themeToggleIcon" aria-hidden="true">&#9790;</span>
               <span id="themeToggleLabel">Escuro</span>
             </button>
-            <div class="status-pill" id="syncStatus">Carregando</div>
           </div>
         </header>
+        <div class="sync-status" id="syncStatus" aria-live="polite" aria-atomic="true">Carregando</div>
 
-        <section class="metrics-grid" aria-label="Resumo dos leads">
-          <article class="metric-card">
-            <span>Total de leads</span>
-            <strong id="totalLeads">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Com contato</span>
-            <strong id="contactLeads">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Com link</span>
-            <strong id="linkLeads">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Priorit&aacute;rios</span>
-            <strong id="priorityLeads">0</strong>
-          </article>
+        <nav class="app-navigation" aria-label="Navega&ccedil;&atilde;o principal" role="tablist">
+          <button class="nav-tab is-active" type="button" data-view="dashboard" aria-controls="dashboardView" aria-selected="true" aria-current="page" role="tab">
+            <span aria-hidden="true">&#9638;</span>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-tab" type="button" data-view="leads" aria-controls="leadsView" aria-selected="false" role="tab">
+            <span aria-hidden="true">&#9776;</span>
+            <span>Leads</span>
+          </button>
+        </nav>
+
+        <section class="app-view is-active" id="dashboardView" data-view-panel="dashboard" aria-label="Dashboard de leads">
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Vis&atilde;o geral</p>
+              <h2>Resumo do pipeline</h2>
+            </div>
+            <button class="primary-button compact-action" type="button" data-go-view="leads">Ver leads</button>
+          </div>
+
+          <section class="metrics-grid" aria-label="Resumo dos leads">
+            <article class="metric-card">
+              <span>Total de leads</span>
+              <strong id="totalLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Com contato</span>
+              <strong id="contactLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Com link</span>
+              <strong id="linkLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Priorit&aacute;rios</span>
+              <strong id="priorityLeads">0</strong>
+            </article>
+          </section>
         </section>
 
-        <section class="list-tools" aria-label="Ferramentas de busca e filtros">
-          <div class="tool-row search-row">
-            <label class="search-box">
-              <span>Buscar</span>
-              <input id="searchInput" type="search" placeholder="Filtrar por nome, contato, link ou obs">
-            </label>
-            <div class="tool-actions">
-              <button class="secondary-button icon-button" type="button" id="refreshButton" aria-label="Atualizar leads" title="Atualizar leads">&#8635;</button>
-              <button class="primary-button" type="button" id="newLeadButton">Novo lead</button>
+        <section class="app-view" id="leadsView" data-view-panel="leads" aria-label="Lista de leads" hidden>
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Atendimento</p>
+              <h2>Lista de leads</h2>
             </div>
+            <button class="primary-button compact-action" type="button" id="quickNewLeadButton">Novo lead</button>
           </div>
 
-          <div class="tool-row filter-row">
-            <label class="filter-field">
-              <span>Link</span>
-              <select id="linkFilter">
-                <option value="all">Todos</option>
-                <option value="with">Com link</option>
-                <option value="without">Sem link</option>
-              </select>
-            </label>
-            <label class="filter-field">
-              <span>Obs.</span>
-              <select id="notesFilter">
-                <option value="all">Todas</option>
-                <option value="with">Com obs.</option>
-                <option value="without">Sem obs.</option>
-              </select>
-            </label>
-            <label class="filter-field">
-              <span>Contato</span>
-              <select id="contactFilter">
-                <option value="all">Todos</option>
-                <option value="with">Com contato</option>
-                <option value="without">Sem contato</option>
-              </select>
-            </label>
-            <label class="filter-field">
-              <span>Prioridade</span>
-              <select id="priorityFilter">
-                <option value="all">Todas</option>
-                <option value="priority">Priorit&aacute;rios</option>
-                <option value="normal">Normais</option>
-              </select>
-            </label>
-            <button class="secondary-button" type="button" id="clearFiltersButton">Limpar</button>
-          </div>
-        </section>
-
-        <section class="leads-area" aria-live="polite">
-          <div class="empty-state" id="emptyState" hidden>
-            Nenhum lead cadastrado ainda.
-          </div>
-          <div class="lead-list-shell">
-            <div class="lead-list-header" aria-hidden="true">
-              <span>Lead</span>
-              <span>Contato</span>
-              <span>Status</span>
-              <span>Atualiza&ccedil;&atilde;o</span>
-              <span>A&ccedil;&otilde;es</span>
+          <section class="list-tools" aria-label="Ferramentas de busca e filtros">
+            <div class="tool-row search-row">
+              <label class="search-box">
+                <span>Buscar</span>
+                <input id="searchInput" type="search" placeholder="Filtrar por nome, contato, link ou obs">
+              </label>
+              <div class="tool-actions">
+                <button class="secondary-button icon-button" type="button" id="refreshButton" aria-label="Atualizar leads" title="Atualizar leads">&#8635;</button>
+                <button class="primary-button" type="button" id="newLeadButton">Novo lead</button>
+              </div>
             </div>
-            <div class="lead-list" id="leadList"></div>
-          </div>
+
+            <div class="tool-row filter-row">
+              <label class="filter-field">
+                <span>Link</span>
+                <select id="linkFilter">
+                  <option value="all">Todos</option>
+                  <option value="with">Com link</option>
+                  <option value="without">Sem link</option>
+                </select>
+              </label>
+              <label class="filter-field">
+                <span>Obs.</span>
+                <select id="notesFilter">
+                  <option value="all">Todas</option>
+                  <option value="with">Com obs.</option>
+                  <option value="without">Sem obs.</option>
+                </select>
+              </label>
+              <label class="filter-field">
+                <span>Contato</span>
+                <select id="contactFilter">
+                  <option value="all">Todos</option>
+                  <option value="with">Com contato</option>
+                  <option value="without">Sem contato</option>
+                </select>
+              </label>
+              <label class="filter-field">
+                <span>Prioridade</span>
+                <select id="priorityFilter">
+                  <option value="all">Todas</option>
+                  <option value="priority">Priorit&aacute;rios</option>
+                  <option value="normal">Normais</option>
+                </select>
+              </label>
+              <button class="secondary-button" type="button" id="clearFiltersButton">Limpar</button>
+            </div>
+          </section>
+
+          <section class="leads-area" aria-live="polite">
+            <div class="empty-state" id="emptyState" hidden>
+              Nenhum lead cadastrado ainda.
+            </div>
+            <div class="lead-list-shell">
+              <div class="lead-list-header" aria-hidden="true">
+                <span>Lead</span>
+                <span>Contato</span>
+                <span>Status</span>
+                <span>Atualiza&ccedil;&atilde;o</span>
+                <span>A&ccedil;&otilde;es</span>
+              </div>
+              <div class="lead-list" id="leadList"></div>
+            </div>
+          </section>
         </section>
       </section>
     </main>
 
     <button class="floating-random-button" type="button" id="randomNoNotesButton" aria-label="Abrir lead aleat&oacute;rio sem observa&ccedil;&atilde;o" title="Abrir lead aleat&oacute;rio sem observa&ccedil;&atilde;o" disabled>
       <span aria-hidden="true">&#9856;</span>
-      <span>Sem obs.</span>
+      
     </button>
 
     <dialog class="modal" id="leadFormDialog" aria-labelledby="formModalTitle">
