@@ -336,6 +336,44 @@ select:focus {
   line-height: 1;
 }
 
+.floating-random-button {
+  position: fixed;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid rgba(48, 209, 88, 0.32);
+  border-radius: 999px;
+  padding: 0 18px 0 16px;
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.94), rgba(10, 132, 255, 0.94));
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34), 0 12px 28px rgba(48, 209, 88, 0.18);
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.floating-random-button span:first-child {
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.floating-random-button:hover:not(:disabled) {
+  border-color: rgba(142, 203, 255, 0.52);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.38), 0 14px 30px rgba(10, 132, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.floating-random-button:disabled {
+  border-color: rgba(235, 235, 245, 0.08);
+  background: rgba(58, 58, 60, 0.72);
+  color: var(--secondary-text);
+  box-shadow: none;
+}
+
 .list-tools {
   display: grid;
   gap: 10px;
@@ -971,6 +1009,13 @@ select:focus {
   .modal-card {
     max-height: calc(100dvh - 22px);
     padding: 15px;
+  }
+
+  .floating-random-button {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+    min-height: 46px;
+    padding: 0 15px;
   }
 }
 

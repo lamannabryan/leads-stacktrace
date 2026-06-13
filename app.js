@@ -44,6 +44,7 @@ const detailsNotes = document.querySelector("#detailsNotes");
 const detailsPriorityButton = document.querySelector("#detailsPriorityButton");
 const detailsEditButton = document.querySelector("#detailsEditButton");
 const detailsDeleteButton = document.querySelector("#detailsDeleteButton");
+const randomNoNotesButton = document.querySelector("#randomNoNotesButton");
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -189,6 +190,7 @@ async function saveLead(event) {
   const currentId = leadIdInput.value;
   const isEditing = Boolean(currentId);
   const payload = getFormLead();
+  let savedLeadId = currentId;
 
   try {
     if (isEditing) {
@@ -197,20 +199,24 @@ async function saveLead(event) {
         body: JSON.stringify(payload)
       });
     } else {
-      await requestFirebase("", {
+      const createdLead = await requestFirebase("", {
         method: "POST",
         body: JSON.stringify({
           ...payload,
           createdAt: Date.now()
         })
       });
+
+      savedLeadId = createdLead?.name || "";
     }
 
     await loadLeads();
 
-    if (!isEditing) {
-      closeDialog(leadFormDialog);
-      resetForm();
+    closeDialog(leadFormDialog);
+    resetForm();
+
+    if (savedLeadId) {
+      openLeadDetails(savedLeadId);
     }
   } catch (error) {
     console.error(error);
@@ -574,12 +580,39 @@ function closeDetailsModal() {
   activeDetailsLeadId = "";
 }
 
+function getNoNotesLeads() {
+  return leads.filter((lead) => !hasLeadField(lead.notes));
+}
+
+function updateRandomNoNotesButton() {
+  const candidatesCount = getNoNotesLeads().length;
+
+  randomNoNotesButton.disabled = candidatesCount === 0;
+  randomNoNotesButton.title = candidatesCount > 0
+    ? "Abrir lead aleatorio sem observacao"
+    : "Nenhum lead sem observacao";
+  randomNoNotesButton.setAttribute("aria-label", randomNoNotesButton.title);
+}
+
+function openRandomLeadWithoutNotes() {
+  const candidates = getNoNotesLeads();
+
+  if (candidates.length === 0) {
+    updateRandomNoNotesButton();
+    return;
+  }
+
+  const randomIndex = Math.floor(Math.random() * candidates.length);
+  openLeadDetails(candidates[randomIndex].id);
+}
+
 function renderLeads() {
   const term = normalizeSearchText(searchInput.value.trim());
   const filteredLeads = getFilteredLeads();
   visibleLeads = filteredLeads;
 
   renderMetrics();
+  updateRandomNoNotesButton();
   leadList.innerHTML = "";
   emptyState.hidden = filteredLeads.length > 0;
   leadListShell.hidden = filteredLeads.length === 0;
@@ -736,6 +769,7 @@ detailsDeleteButton.addEventListener("click", () => {
     deleteLead(activeDetailsLeadId);
   }
 });
+randomNoNotesButton.addEventListener("click", openRandomLeadWithoutNotes);
 document.addEventListener("keydown", (event) => {
   if (!leadDetailsDialog.open) {
     return;
@@ -751,5 +785,13 @@ document.addEventListener("keydown", (event) => {
     navigateLeadDetails(1);
   }
 });
+
+if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+      console.warn("Nao foi possivel registrar o service worker", error);
+    });
+  });
+}
 
 loadLeads();

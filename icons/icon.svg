@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Leads Stacktrace</title>
+  <rect width="512" height="512" rx="112" fill="#0b0b0f"/>
+  <path fill="#0a84ff" d="M112 142c0-22 18-40 40-40h208c22 0 40 18 40 40v228c0 22-18 40-40 40H152c-22 0-40-18-40-40V142z"/>
+  <path fill="#30d158" d="M152 102h208c22 0 40 18 40 40v54H112v-54c0-22 18-40 40-40z"/>
+  <path fill="#ffffff" d="M171 248h170c12 0 21 9 21 21s-9 21-21 21H171c-12 0-21-9-21-21s9-21 21-21zm0 82h116c12 0 21 9 21 21s-9 21-21 21H171c-12 0-21-9-21-21s9-21 21-21z"/>
+  <circle cx="170" cy="150" r="18" fill="#ffffff"/>
+  <circle cx="224" cy="150" r="18" fill="#ffffff" opacity=".82"/>
+  <circle cx="278" cy="150" r="18" fill="#ffffff" opacity=".64"/>
+</svg>
