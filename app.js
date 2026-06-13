@@ -45,15 +45,26 @@ const detailsPriorityButton = document.querySelector("#detailsPriorityButton");
 const detailsEditButton = document.querySelector("#detailsEditButton");
 const detailsDeleteButton = document.querySelector("#detailsDeleteButton");
 const randomNoNotesButton = document.querySelector("#randomNoNotesButton");
+const themeToggleButton = document.querySelector("#themeToggleButton");
+const themeToggleIcon = document.querySelector("#themeToggleIcon");
+const themeToggleLabel = document.querySelector("#themeToggleLabel");
+const themeColorMeta = document.querySelector("meta[name='theme-color']");
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "short"
 });
 
+const THEME_STORAGE_KEY = "leads-stacktrace-theme";
+const THEME_COLORS = {
+  light: "#F2E9EA",
+  dark: "#555354"
+};
+
 let leads = [];
 let visibleLeads = [];
 let activeDetailsLeadId = "";
+let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 
 function endpoint(path = "") {
   return `${LEADS_ENDPOINT}${path}.json`;
@@ -62,6 +73,43 @@ function endpoint(path = "") {
 function setStatus(message, type = "") {
   syncStatus.textContent = message;
   syncStatus.className = `status-pill ${type}`.trim();
+}
+
+function updateThemeButton(theme) {
+  const isDark = theme === "dark";
+
+  themeToggleButton.setAttribute("aria-pressed", String(isDark));
+  themeToggleButton.setAttribute("aria-label", isDark ? "Usar modo claro" : "Usar modo escuro");
+  themeToggleButton.title = isDark ? "Usar modo claro" : "Usar modo escuro";
+  themeToggleIcon.textContent = isDark ? "\u2600" : "\u263e";
+  themeToggleLabel.textContent = isDark ? "Claro" : "Escuro";
+}
+
+function setTheme(theme, shouldPersist = true) {
+  currentTheme = theme === "dark" ? "dark" : "light";
+
+  if (currentTheme === "dark") {
+    document.documentElement.dataset.theme = "dark";
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+
+  themeColorMeta?.setAttribute("content", THEME_COLORS[currentTheme]);
+  updateThemeButton(currentTheme);
+
+  if (!shouldPersist) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+  } catch (error) {
+    console.warn("Nao foi possivel salvar o tema", error);
+  }
+}
+
+function toggleTheme() {
+  setTheme(currentTheme === "dark" ? "light" : "dark");
 }
 
 function openDialog(dialog) {
@@ -743,6 +791,7 @@ notesFilter.addEventListener("change", renderLeads);
 contactFilter.addEventListener("change", renderLeads);
 priorityFilter.addEventListener("change", renderLeads);
 clearFiltersButton.addEventListener("click", clearFilters);
+themeToggleButton.addEventListener("click", toggleTheme);
 closeDetailsModalButton.addEventListener("click", closeDetailsModal);
 previousLeadButton.addEventListener("click", () => navigateLeadDetails(-1));
 nextLeadButton.addEventListener("click", () => navigateLeadDetails(1));
@@ -794,4 +843,5 @@ if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
   });
 }
 
+setTheme(currentTheme, false);
 loadLeads();

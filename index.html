@@ -3,15 +3,25 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0b0b0f">
+    <meta name="theme-color" content="#F2E9EA">
     <meta name="application-name" content="Leads Stacktrace">
     <meta name="apple-mobile-web-app-title" content="Leads Stacktrace">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Leads Stacktrace</title>
+    <script>
+      try {
+        if (localStorage.getItem("leads-stacktrace-theme") === "dark") {
+          document.documentElement.dataset.theme = "dark";
+        }
+      } catch (error) {}
+    </script>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
     <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -22,7 +32,13 @@
             <p class="eyebrow">Pipeline comercial</p>
             <h1>Leads Stacktrace</h1>
           </div>
-          <div class="status-pill" id="syncStatus">Carregando</div>
+          <div class="topbar-actions">
+            <button class="theme-toggle" type="button" id="themeToggleButton" aria-label="Usar modo escuro" aria-pressed="false" title="Usar modo escuro">
+              <span id="themeToggleIcon" aria-hidden="true">&#9790;</span>
+              <span id="themeToggleLabel">Escuro</span>
+            </button>
+            <div class="status-pill" id="syncStatus">Carregando</div>
+          </div>
         </header>
 
         <section class="metrics-grid" aria-label="Resumo dos leads">
