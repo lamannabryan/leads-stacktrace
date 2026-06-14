@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell">  
       <section class="workspace" aria-label="Gerenciador de leads">
         <header class="topbar">
           <div class="title-stack">
@@ -59,30 +59,23 @@
           <div class="view-heading">
             <div>
               <p class="eyebrow">Vis&atilde;o geral</p>
-              <h2>Resumo do pipeline</h2>
+              <h2>Resumo dos leads</h2>
             </div>
             <button class="primary-button compact-action" type="button" data-go-view="leads">Ver leads</button>
           </div>
 
           <section class="dashboard-overview" aria-label="Indicadores principais do CRM">
             <article class="dashboard-hero">
-              <span>Pipeline estimado</span>
+              <span>Valor total estimado</span>
               <strong id="dashboardPipelineValue">R$ 0</strong>
-              <p id="dashboardPipelineSummary">0 leads em andamento</p>
+              <p id="dashboardPipelineSummary">0 leads cadastrados</p>
             </article>
             <article class="dashboard-panel">
               <div class="panel-heading">
-                <span>Funil</span>
-                <strong id="dashboardStageTotal">0</strong>
-              </div>
-              <div class="stage-list" id="dashboardStageList" aria-label="Leads por etapa"></div>
-            </article>
-            <article class="dashboard-panel">
-              <div class="panel-heading">
-                <span>Foco</span>
+                <span>Canais</span>
                 <strong id="dashboardFocusCount">0</strong>
               </div>
-              <p class="dashboard-panel-copy" id="dashboardFocusSummary">Sem a&ccedil;&otilde;es pendentes.</p>
+              <p class="dashboard-panel-copy" id="dashboardFocusSummary">Sem canais informados.</p>
             </article>
           </section>
 
@@ -100,16 +93,20 @@
               <strong id="linkLeads">0</strong>
             </article>
             <article class="metric-card">
-              <span>Em andamento</span>
+              <span>Instagram</span>
+              <strong id="instagramLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>WhatsApp</span>
+              <strong id="whatsappLeads">0</strong>
+            </article>
+            <article class="metric-card">
+              <span>Com canal</span>
               <strong id="activePipelineLeads">0</strong>
             </article>
             <article class="metric-card">
               <span>Valor estimado</span>
               <strong id="pipelineValueLeads">R$ 0</strong>
-            </article>
-            <article class="metric-card">
-              <span>Pr&oacute;ximas a&ccedil;&otilde;es</span>
-              <strong id="nextActionLeads">0</strong>
             </article>
             <article class="metric-card">
               <span>Priorit&aacute;rios</span>
@@ -140,31 +137,6 @@
             </div>
 
             <div class="tool-row filter-row">
-              <label class="filter-field">
-                <span>Etapa</span>
-                <select id="stageFilter">
-                  <option value="all">Todas</option>
-                  <option value="new">Novo lead</option>
-                  <option value="contacted">Contato feito</option>
-                  <option value="qualified">Qualificado</option>
-                  <option value="proposal">Proposta</option>
-                  <option value="won">Ganho</option>
-                  <option value="lost">Perdido</option>
-                </select>
-              </label>
-              <label class="filter-field">
-                <span>Origem</span>
-                <select id="sourceFilter">
-                  <option value="all">Todas</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="site">Site</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="referral">Indica&ccedil;&atilde;o</option>
-                  <option value="prospecting">Prospec&ccedil;&atilde;o</option>
-                  <option value="other">Outra</option>
-                  <option value="none">Sem origem</option>
-                </select>
-              </label>
               <label class="filter-field">
                 <span>Link</span>
                 <select id="linkFilter">
@@ -209,7 +181,7 @@
               <div class="lead-list-header" aria-hidden="true">
                 <span>Lead</span>
                 <span>Contato</span>
-                <span>Status</span>
+                <span>Resumo</span>
                 <span>Atualiza&ccedil;&atilde;o</span>
                 <span>A&ccedil;&otilde;es</span>
               </div>
@@ -254,39 +226,23 @@
             <input id="contact" name="contact" type="text" placeholder="Telefone, email ou WhatsApp" autocomplete="email">
           </label>
 
-          <label>
-            <span>Etapa do funil</span>
-            <select id="stage" name="stage">
-              <option value="new">Novo lead</option>
-              <option value="contacted">Contato feito</option>
-              <option value="qualified">Qualificado</option>
-              <option value="proposal">Proposta</option>
-              <option value="won">Ganho</option>
-              <option value="lost">Perdido</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Origem</span>
-            <select id="source" name="source">
-              <option value="">Sem origem</option>
-              <option value="instagram">Instagram</option>
-              <option value="site">Site</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="referral">Indica&ccedil;&atilde;o</option>
-              <option value="prospecting">Prospec&ccedil;&atilde;o</option>
-              <option value="other">Outra</option>
-            </select>
-          </label>
+          <fieldset class="channel-field full-field">
+            <legend>Canais</legend>
+            <div class="channel-options">
+              <label class="channel-option">
+                <input id="instagram" name="instagram" type="checkbox">
+                <span>Instagram</span>
+              </label>
+              <label class="channel-option">
+                <input id="whatsapp" name="whatsapp" type="checkbox">
+                <span>WhatsApp</span>
+              </label>
+            </div>
+          </fieldset>
 
           <label>
             <span>Valor estimado</span>
             <input id="dealValue" name="dealValue" type="text" placeholder="0,00" inputmode="decimal">
-          </label>
-
-          <label>
-            <span>Pr&oacute;xima a&ccedil;&atilde;o</span>
-            <input id="nextActionDate" name="nextActionDate" type="date">
           </label>
 
           <label class="full-field">
@@ -322,7 +278,6 @@
         </header>
 
         <section class="details-summary">
-          <div class="lead-avatar" id="detailsAvatar">LS</div>
           <div>
             <span class="lead-date" id="detailsDate"></span>
             <div class="lead-meta" id="detailsBadges"></div>
@@ -331,20 +286,16 @@
 
         <section class="details-grid" aria-label="Informa&ccedil;&otilde;es do lead">
           <article class="detail-block">
-            <span>Etapa</span>
-            <p id="detailsStage">Novo lead</p>
+            <span>Instagram</span>
+            <p id="detailsInstagram">N&atilde;o</p>
           </article>
           <article class="detail-block">
-            <span>Origem</span>
-            <p id="detailsSource">Sem origem</p>
+            <span>WhatsApp</span>
+            <p id="detailsWhatsapp">N&atilde;o</p>
           </article>
           <article class="detail-block">
             <span>Valor estimado</span>
             <p id="detailsDealValue">R$ 0</p>
-          </article>
-          <article class="detail-block">
-            <span>Pr&oacute;xima a&ccedil;&atilde;o</span>
-            <p id="detailsNextAction">Sem data</p>
           </article>
           <article class="detail-block">
             <span>Contato</span>
